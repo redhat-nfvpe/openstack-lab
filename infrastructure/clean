@@ -1,0 +1,63 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+"$ROOT/utils/delete-ssh-config" lab-controller-0
+"$ROOT/utils/delete-ssh-config" lab-computehci-0
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/stackrc"
+
+	m '[tripleo] Ensuring no infrastructure nodes'
+
+	for UUID in \$(openstack baremetal node list --format value --column UUID); do
+		m "[tripleo] Deleting infrastructure node \"\$UUID\""
+		openstack \
+		baremetal node maintenance set "\$UUID" \
+			$(c "$TRIPLEO_VERBOSITY") || true
+
+		openstack \
+		baremetal node delete "\$UUID" \
+			$(c "$TRIPLEO_VERBOSITY")
+	done
+
+	m '[tripleo] Ensuring no infrastructure images uploaded'
+
+	for ID in \$(openstack image list --format value --column ID); do
+		m "[tripleo] Deleting infrastructure image \"\$ID\""
+		openstack \
+			image delete "\$ID"
+	done
+
+	#m '[tripleo] Ensuring no infrastructure images'
+	#rm --recursive --force "\$HOME/images/"
+
+EOT
+)"
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Ensuring no virtual machines for infrastructure nodes'
+
+	function d () {
+		m "[manager-root] Deleting virtual machine \"\$1\""
+		virsh destroy "\$1" || true
+		virsh undefine "\$1" || true
+		rm --force "/home/manager/libvirt/images/\$1.qcow2"
+	}
+
+	d openstack-controller
+	d openstack-compute
+
+EOT
+)"

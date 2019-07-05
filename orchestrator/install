@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+# bash, ssh, sshpass, rsync, sed, grep, awk
+
+m '[orchestrator] Ensuring required packages are installed'
+sudo dnf install sshpass

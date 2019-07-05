@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+DOMAIN=$1
+PROJECT=$2
+USERNAME=$3
+PASSWORD=$4
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$HERE
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+# For quality of life we will make sure that the "openstack" command (Cliff) will always limit its
+# output width to the width of our terminal ("CLIFF_FIT_WIDTH=1" doesn't seem to work)
+
+"$ROOT/ssh" manager \
+". \"\$HOME/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc\" 
+CLIFF_MAX_TERM_WIDTH=\"$(tput cols)\" \
+OS_PROJECT_DOMAIN_NAME=$(c "$DOMAIN") \
+OS_PROJECT_NAME=$(c "$PROJECT") \
+OS_USER_DOMAIN_NAME=$(c "$DOMAIN") \
+OS_USERNAME=$(c "$USERNAME") \
+OS_PASSWORD=$(c "$PASSWORD") \
+\"\$HOME/.local/bin/openstack\" $(c "${@:5}")"

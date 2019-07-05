@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+"$ROOT/rsync" \
+	--rsync-path='mkdir --parents /home/manager/workloads/ && rsync' \
+	"$ROOT/configuration/overcloud/heat/templates/hello-world-tenant.yaml" \
+	"$ROOT/configuration/overcloud/heat/templates/hello-world.yaml" \
+	manager:/home/manager/workloads/
+
+m '[cloud] Creating hello-world-tenant'
+"$ROOT/openstack" \
+stack create hello-world-tenant \
+	--template /home/manager/workloads/hello-world-tenant.yaml \
+	--wait -v
+
+m '[cloud] Creating hello-world'
+"$HERE/openstack" \
+stack create hello-world \
+	--template /home/manager/workloads/hello-world.yaml \
+	--parameter "timezone=$TIMEZONE" \
+	--wait -v
+
+m '[cloud] Fetching hello-world private key'
+
+KEY=centos@hello-world
+
+"$HERE/openstack" \
+stack output show hello-world private-key --format value --column output_value \
+	> "$KEYS_ROOT/$KEY"
+
+chmod 600 "$KEYS_ROOT/$KEY"
+
+IP_ADDRESS=$("$HERE/openstack" \
+stack output show hello-world public-ip --format value --column output_value)
+
+m "[cloud] hello-world server's public IP address: $IP_ADDRESS"
+
+"$ROOT/utils/ensure-ssh-config-proxy" hello-world "$IP_ADDRESS" centos "$KEY" lab-controller-0

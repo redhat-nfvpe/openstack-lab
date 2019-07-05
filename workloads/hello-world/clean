@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+m '[cloud] Deleting hello-world'
+# Note: it's possible to delete the stack from the admin user, but we would have to use the ID
+# rather than the name
+"$HERE/openstack" \
+stack delete hello-world \
+	--wait -v || true
+
+m '[cloud] Disabling hello-world domain'
+# Domain needs to be disabled in order to delete it
+"$ROOT/openstack" \
+domain set hello-world --disable -v || true
+
+m '[cloud] Deleting hello-world-tenant'
+"$ROOT/openstack" \
+stack delete hello-world-tenant \
+	--wait -v || true
+
+"$ROOT/utils/delete-ssh-config" hello-world

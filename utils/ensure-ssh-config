@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+HOST=$2
+USERNAME=$3
+KEY=$4
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+"$HERE/delete-ssh-config" "$NAME"
+
+cat >> "$WORKSPACE_ROOT/ssh.config" <<- EOT
+	Host "$NAME"
+	  HostName "$HOST"
+	  User "$USERNAME"
+	  IdentityFile "$KEYS_ROOT/$KEY"
+
+EOT

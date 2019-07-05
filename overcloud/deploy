@@ -1,0 +1,160 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+NETWORKS_YAML=$(cat "$ROOT/configuration/overcloud/networks.yaml")
+
+NETWORKING_ENVIRONMENT_J2_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/networking.j2.yaml")
+
+NETWORKING_TEMPLATE_J2_YAML=$(cat "$ROOT/configuration/overcloud/heat/templates/networking.j2.yaml")
+
+ROLES_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/roles.yaml")
+
+NOVA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/nova.yaml")
+
+NEUTRON_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/neutron.yaml")
+
+CEPH_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/ceph.yaml")
+
+HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.yaml" |
+	HOME=/home/tripleo \
+	ENVIRONMENTS=/home/tripleo/overcloud/deploy/templates/environments \
+	envsubst)
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/stackrc"
+
+	DEPLOY="\$HOME/overcloud/deploy"
+	TEMPLATES="\$DEPLOY/templates"
+	TEMPLATES_J2="\$DEPLOY/templates.j2"
+	INFRASTRUCTURE="\$HOME/overcloud/infrastructure"
+	rm --recursive --force "\$DEPLOY/"
+	mkdir --parents "\$TEMPLATES/"
+	mkdir --parents "\$TEMPLATES_J2/"
+	mkdir --parents "\$INFRASTRUCTURE/"
+
+	m '[tripleo] Updating infrastructure roles configuration'
+
+	openstack \
+	overcloud roles generate \
+		-o "\$INFRASTRUCTURE/roles.default.yaml" \
+		Controller ComputeHCI \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	# Add "Public" network to roles
+	python2 <<- _EOT
+		import yaml
+
+		with open("\$INFRASTRUCTURE/roles.default.yaml") as f:
+		  y = yaml.load(f)
+
+		for r in y:
+		  if r["name"] in ("Controller", "ComputeHCI"):
+		  	# Add "Public" network
+		    r["networks"]["Public"] = {"subnet": "public_subnet"}
+
+		    # Mark "Public" network as the *only* default route network
+		    # Controller default = ["External"]
+		    # ComputeHCI default = undefined
+		    # Note: undefined (rather than empty!) functions equivalently to ["ControlPlane"]
+		    # (See our "networking.j2.yaml")
+		    r["default_route_networks"] = ["Public"]
+
+		    #if "default_route_networks" not in r:
+		    #  r["default_route_networks"] = []
+		    #r["default_route_networks"].append("Public")
+
+		with open("\$INFRASTRUCTURE/roles.yaml", "w") as f:
+		  yaml.dump(y, f, default_flow_style=False)
+	_EOT
+
+	m '[tripleo] Updating networks configuration'
+	echo $(c "$NETWORKS_YAML") \
+		> "\$INFRASTRUCTURE/networks.yaml"
+
+	m '[tripleo] Updating Heat Jinja2 environments and templates for networking'
+
+	rsync --recursive \
+		/usr/share/openstack-tripleo-heat-templates/* \
+		"\$TEMPLATES_J2/"
+
+	echo $(c "$NETWORKING_ENVIRONMENT_J2_YAML") \
+		> "\$TEMPLATES_J2/environments/networking.j2.yaml"
+
+	mkdir --parents "\$TEMPLATES_J2/network/config/lab/"
+ 	echo $(c "$NETWORKING_TEMPLATE_J2_YAML") \
+ 		> "\$TEMPLATES_J2/network/config/lab/role.role.j2.yaml"
+
+	m '[tripleo] Rendering Heat templates and environments from Jinja2'
+
+	"\$TEMPLATES_J2/tools/process-templates.py" \
+		--safe \
+		--base_path "\$TEMPLATES_J2/" \
+		--output-dir "\$TEMPLATES/" \
+		--network-data "\$INFRASTRUCTURE/networks.yaml" \
+		--roles-data "\$INFRASTRUCTURE/roles.yaml"
+
+	m '[tripleo] Updating Heat environment for container images'
+
+	# Note: We are using the same container images environment for the undercloud and the overcloud
+	# Note: This file is often created as "containers-prepare-parameter.yaml" in the documentation
+	#cp "\$HOME/undercloud/container-images.yaml" "\$TEMPLATES/environments/"
+
+	python2 <<- _EOT
+		import yaml
+
+		with open("\$HOME/undercloud/container-images.yaml") as f:
+		  y = yaml.load(f)
+
+		# TODO: what is our push_destination?
+		del y["parameter_defaults"]["ContainerImagePrepare"][0]["push_destination"]
+
+		with open("\$TEMPLATES/environments/container-images.yaml", "w") as f:
+		  yaml.dump(y, f, default_flow_style=False)
+	_EOT
+
+	m '[tripleo] Updating Heat environment for roles'
+	echo $(c "$ROLES_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/roles.yaml"
+
+	m '[tripleo] Updating Heat environment for Nova'
+	echo $(c "$NOVA_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/nova.yaml"
+
+	m '[tripleo] Updating Heat environment for Neutron'
+	echo $(c "$NEUTRON_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/neutron.yaml"
+
+	m '[tripleo] Updating Heat environment for Ceph'
+	echo $(c "$CEPH_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/ceph.yaml"
+
+	m '[tripleo] Updating Heat environment selection'
+	echo $(c "$HEAT_ENVIRONMENTS_YAML") \
+		> "\$DEPLOY/heat-environments.yaml"
+
+	m '[tripleo] Deploying OpenStack'
+	# The stack name will be used as a prefix for server names and for the "rc" file (e.g. "labrc")
+	openstack \
+	overcloud deploy \
+		--stack $(c "$TRIPLEO_OVERCLOUD_HEAT_STACK") \
+		--templates "\$TEMPLATES/" \
+		--networks-file "\$INFRASTRUCTURE/networks.yaml" \
+		--roles-file "\$INFRASTRUCTURE/roles.yaml" \
+		--answers-file "\$DEPLOY/heat-environments.yaml" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"

@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+m '[cloud] Deleting common'
+"$ROOT/openstack" \
+stack delete common \
+	--wait -v || true

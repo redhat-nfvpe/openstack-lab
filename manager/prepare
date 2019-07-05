@@ -1,0 +1,331 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+EQ_MANAGER_OFFICE_INTERFACE=$(eq "$MANAGER_OFFICE_INTERFACE")
+C_MANAGER_OFFICE_INTERFACE=$(c "$MANAGER_OFFICE_INTERFACE")
+EQ_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$(eq "$MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE")
+C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$(c "$MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE")
+
+NETWORK_HYPERVISOR_CONTROL_PLANE_XML=$(cat "$ROOT/configuration/libvirt/networks/hypervisor-control-plane.xml" |
+	MANAGER_OFFICE_INTERFACE=$EQ_MANAGER_OFFICE_INTERFACE \
+	MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$EQ_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE \
+	envsubst)
+
+NETWORK_OPENSTACK_CONTROL_PLANE_XML=$(cat "$ROOT/configuration/libvirt/networks/openstack-control-plane.xml" |
+	MANAGER_OFFICE_INTERFACE=$EQ_MANAGER_OFFICE_INTERFACE \
+	MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$EQ_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE \
+	envsubst)
+
+NETWORK_PUBLIC_XML=$(cat "$ROOT/configuration/libvirt/networks/public.xml" |
+	MANAGER_OFFICE_INTERFACE=$EQ_MANAGER_OFFICE_INTERFACE \
+	MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$EQ_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE \
+	envsubst)
+
+LIBVIRT_NETWORK_HOOK=$(cat "$ROOT/configuration/libvirt/network-hook")
+
+m '[manager-root] Ensuring keypair authorization for user "root" (you will be prompted for password if not)'
+"$ROOT/utils/ensure-ssh-key-authorized" root@manager \
+ssh -i "$KEYS_ROOT/root@manager" "root@$MANAGER_OFFICE_IP_ADDRESS"
+
+"$ROOT/utils/ensure-ssh-config" manager-root "$MANAGER_OFFICE_IP_ADDRESS" root root@manager
+
+PASSWORD=$("$ROOT/utils/get-password" manager@manager)
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Ensuring network bridges are configured (~ 15 seconds)'
+
+	systemctl stop network.service 
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-public <<- _EOT
+		# "public" bridge
+		# For office and world access
+		# Contains the office network interface $MANAGER_OFFICE_INTERFACE
+		# Has a secondary IP address, see "ifcfg-public:0"
+		DEVICE=public
+		ONBOOT=yes
+		NM_CONTROLLED=no
+
+		TYPE=Bridge
+		STP=on
+		# Minimum delay is 2 for STP
+		DELAY=2
+
+		# Will receive IP address from office router
+		BOOTPROTO=dhcp
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public.bak
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-public:0 <<- _EOT
+		# Extra IP address for the "public" bridge
+		# Serves as the gateway for "public" flat network for OpenStack and OVN
+		DEVICE=public:0
+		ONBOOT=yes
+		NM_CONTROLLED=no
+
+		TYPE=Ethernet
+		DELAY=0
+
+		BOOTPROTO=none
+		IPADDR=10.0.2.1
+		NETMASK=255.255.255.0
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public:0.bak
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OFFICE_INTERFACE <<- _EOT
+		# Office network interface
+		# Contained in the "public" bridge
+		DEVICE=$EQ_MANAGER_OFFICE_INTERFACE
+		ONBOOT=yes
+		NM_CONTROLLED=no
+
+		TYPE=Ethernet
+		BRIDGE=public
+		DELAY=0
+
+		BOOTPROTO=none
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OFFICE_INTERFACE.bak
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-openstack <<- _EOT
+		# "openstack" bridge
+		# For the OpenStack control plane
+		# Contains the OpenStack control plane interface $MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE
+		DEVICE=openstack
+		ONBOOT=yes
+		NM_CONTROLLED=no
+
+		TYPE=Bridge
+		STP=on
+		# Minimum delay is 2 for STP
+		DELAY=2
+
+		BOOTPROTO=none
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-openstack.bak
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE <<- _EOT
+		# OpenStack control plane interface
+		# Contained in the "openstack" bridge
+		DEVICE=$EQ_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE
+		ONBOOT=yes
+		NM_CONTROLLED=no
+
+		TYPE=Ethernet
+		BRIDGE=openstack
+		DELAY=0
+
+		BOOTPROTO=none
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE.bak
+
+	systemctl start network.service
+
+	# OLD: brctl works but won't survive reboots
+	#brctl addbr openstack || true
+	#brctl addif openstack $C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE || true
+	#brctl stp openstack on
+	#ip link set openstack up
+
+	# OLD: NetworkManager bridge does not work
+	#nmcli connection delete openstack || true
+	#nmcli connection delete $C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE || true
+	#nmcli connection add \
+	#	con-name openstack \
+	#	type bridge \
+	#	ifname openstack
+	#nmcli connection add \
+	#	con-name $C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE \
+	#	type ethernet \
+	#	ifname $C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE \
+	#	master openstack
+
+	m "[manager-root] Ensuring timezone is \"$(eq "$TIMEZONE")\""
+	timedatectl set-timezone $(c "$TIMEZONE")
+
+	m '[manager-root] Ensuring libvirt and related packages are installed'
+
+	# Note: "centos-release-qemu-ev" provides a repository that will give us a newer version of
+	# qemu, which is required to avoid the "CPU feature arat not found" error with OpenStack images
+	# running in our virtual machines
+	yum install --assumeyes \
+		epel-release centos-release-qemu-ev deltarpm
+
+	yum upgrade --assumeyes
+
+	yum install --assumeyes \
+		bash-completion \
+		qemu-kvm libvirt virt-install cloud-utils ipmitool \
+		python36-pip python36-devel libvirt-devel openssl-devel gcc \
+		wget
+
+	systemctl enable libvirtd.service
+	systemctl start libvirtd.service
+
+	m '[manager-root] Ensuring libvirt networks are configured'
+
+	function qemu_enable_bridge () {
+		# Allow the bridge to be used by qemu
+		if ! grep --quiet --line-regexp "allow \$1" /etc/qemu-kvm/bridge.conf; then
+			echo "allow \$1" >> /etc/qemu-kvm/bridge.conf
+		fi
+	}
+
+	function virsh_enable_network () {
+		if ! virsh net-uuid "\$1" > /dev/null 2>&1; then
+			virsh net-define "\$HOME/libvirt/networks/\$1.xml"
+		fi
+		virsh net-autostart "\$1"
+		virsh net-start "\$1" || true
+	}
+
+	mkdir --parents "\$HOME/libvirt/networks/"
+
+	echo $(c "$NETWORK_HYPERVISOR_CONTROL_PLANE_XML") \
+		> "\$HOME/libvirt/networks/hypervisor-control-plane.xml"
+
+	echo $(c "$NETWORK_OPENSTACK_CONTROL_PLANE_XML") \
+		> "\$HOME/libvirt/networks/openstack-control-plane.xml"
+
+	echo $(c "$NETWORK_PUBLIC_XML") \
+		> "\$HOME/libvirt/networks/public.xml"
+
+	qemu_enable_bridge hypervisor
+	virsh_enable_network hypervisor-control-plane
+
+	qemu_enable_bridge openstack
+	virsh_enable_network openstack-control-plane
+
+	qemu_enable_bridge public
+	virsh_enable_network public
+
+	mkdir --parents /etc/libvirt/hooks/
+	echo $(c "$LIBVIRT_NETWORK_HOOK") > /etc/libvirt/hooks/network
+	chmod +x /etc/libvirt/hooks/network
+
+	m '[manager-root] Ensuring VirtualBMC service is installed and configured'
+
+	# Unfortunately we must run vbmcd as root. It cannot run on the "manager" user because
+	# SELinux won't let it delegate to "/usr/libexec/qemu-kvm" from within systemd. However, it is
+	# possible for root to access any user's libvirt session via their socket. The libvirt
+	# connection string would be:
+	#
+	#   qemu:///session?socket=$XDG_RUNTIME_DIR/libvirt/libvirt-sock
+	#
+	# See: https://libvirt.org/remote.html
+	#
+	# (Side note: CentOS purposely disables systemd user units, so we would need a root systemd unit
+	# even if we use "[Service] User=manager".)
+
+	# VirtualBMC requirements: python36-devel libvirt-devel openssl-devel gcc
+	pip3 install virtualbmc==$(c "$VIRTUALBMC_VERSION")
+
+	if [ ! -f /etc/virtualbmc/virtualbmc.conf ]; then
+	 	mkdir --parents /etc/virtualbmc/
+		mkdir --parents /var/log/virtualbmc/
+
+	 	cat > /etc/virtualbmc/virtualbmc.conf <<- _EOT
+			# See: https://github.com/openstack/virtualbmc/blob/master/virtualbmc/config.py
+			[default]
+			config_dir= /etc/virtualbmc/
+	
+			[log]
+			logfile = /var/log/virtualbmc/virtualbmc.log
+			debug = true
+		_EOT
+	fi
+
+	if [ ! -f /etc/systemd/system/vbmcd.service ]; then
+		cat > /etc/systemd/system/vbmcd.service <<- _EOT
+			[Unit]
+			AssertPathExists=/usr/local/bin/vbmcd
+			ProtectSystem=strict
+	
+			[Service]
+			ExecStart=/usr/local/bin/vbmcd --foreground
+			Environment=VIRTUALBMC_CONFIG=/etc/virtualbmc/virtualbmc.conf
+			ReadWritePaths=/etc/virtualbmc/
+			ReadWritePaths=/var/log/virtualbmc/
+	
+			Restart=always
+			ProtectKernelModules=true
+			ProtectControlGroup=true
+			ProtectKernelTunables=true
+			# Note: CentOS 7 ignores "ProtectSystem=strict", but let's keep it here for the future
+			ProtectSystem=strict
+	
+			[Install]
+			WantedBy=default.target
+		_EOT
+
+		chmod 0644 /etc/systemd/system/vbmcd.service
+		systemctl daemon-reload
+	 	systemctl start vbmcd
+	 	systemctl enable vbmcd
+	 fi
+
+	m "[manager-root] Ensuring user \"manager\" exists and is configured"
+
+	if ! id --user manager > /dev/null; then
+		useradd manager
+	fi
+
+	echo $(c "$PASSWORD") | passwd --stdin manager
+
+	echo "manager ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/manager
+
+	# User "qemu" will need access to our libvirt images
+	chmod a+rx /home/manager/
+
+EOT
+)"
+
+m "[manager] Ensuring keypair authorization for user \"manager\""
+
+"$ROOT/utils/ensure-ssh-key-authorized" manager@manager \
+sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
+
+"$ROOT/utils/ensure-ssh-config" manager "$MANAGER_OFFICE_IP_ADDRESS" manager manager@manager
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager] Ensuring OpenStack client is installed'
+	pip3 install --user --upgrade \
+		python-openstackclient==$(c "$PYTHON_OPENSTACKCLIENT_VERSION") \
+		python-heatclient==$(c "$PYTHON_HEATCLIENT_VERSION")
+
+	m '[tripleo] Updating OpenStack Cliff configuration'
+
+	# For quality of life we will make sure that the "openstack" command (Cliff) will always limit
+	# its output width to the width of our terminal ("CLIFF_FIT_WIDTH=1" doesn't seem to work)
+
+	sed --in-place "/# OpenStack START/,/# OpenStack END/d" "\$HOME/.bashrc"
+	cat >> "\$HOME/.bashrc" <<- _EOT
+		# OpenStack START
+		# For Cliff see: https://docs.openstack.org/cliff/stein/
+		function openstack_cliff () {
+		  export CLIFF_MAX_TERM_WIDTH=\\\$(tput cols)
+		}
+		if [ "\\\$TERM" != dumb ]; then
+		  trap openstack_cliff WINCH
+		  openstack_cliff
+		fi
+		# OpenStack END
+	_EOT
+
+EOT
+)"

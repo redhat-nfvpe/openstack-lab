@@ -1,0 +1,137 @@
+# See: https://docs.openstack.org/heat/stein/template_guide/
+
+heat_template_version: 2018-08-31
+
+description: >-
+  Common stack: flavors, images, and networks
+
+parameters:
+
+  centos7-image-url:
+    type: string
+    label: CentOS 7 GenericCloud image URL
+
+resources:
+
+  # Flavors
+
+  m1.tiny:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.tiny
+      flavorid: 0
+      vcpus: 1
+      ram: 512 # MB
+      disk: 10 # GB
+
+  m1.small:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.small
+      flavorid: 1
+      vcpus: 1
+      ram: 1024 # MB
+      disk: 20 # GB
+
+  m1.medium:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.medium
+      flavorid: 2
+      vcpus: 2
+      ram: 2048 # MB
+      disk: 40 # GB
+
+  m1.large:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.large
+      flavorid: 3
+      vcpus: 2
+      ram: 4096 # MB
+      disk: 80 # GB
+
+  m1.xlarge:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.xlarge
+      flavorid: 4
+      vcpus: 4
+      ram: 8192 # MB
+      disk: 160 # GB
+
+  # Images
+
+  centos7:
+    type: OS::Glance::WebImage
+    properties:
+      name: centos7
+      visibility: public
+      os_distro: CentOS
+      os_version: '7'
+      architecture: x86_64
+      # Default user for CentOS GenericCloud is "centos"
+      location: { get_param: centos7-image-url }
+      container_format: bare
+      disk_format: qcow2
+
+  # Provider networks
+
+  # We are using Nuetron's ML2 plugin with OVN, so all "physical_network" names must be mapped
+  # to OVS bridges by OVN. To see the local mappings:
+  #
+  #   sudo ovs-vsctl get open . external_ids:ovn-bridge-mappings
+  #
+  # For configuration see "configuration/overcloud/environments/neutron.yaml"
+
+  # The "public" network allows access to the outside world
+  # Useful for floating IPs
+  public-net:
+    type: OS::Neutron::ProviderNet
+    properties:
+      name: public
+      router_external: true
+      physical_network: public # OVN maps to "br-public" OVS bridge on NIC 2
+      network_type: flat
+
+  public-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: public
+      network: { get_resource: public-net }
+      enable_dhcp: false
+      ip_version: 4
+      cidr: 10.0.2.0/24
+      gateway_ip: 10.0.2.1 # the Manager's IP address on the "public" bridge
+      # Be careful not to overlap allocations!
+      # We've already reserved the range 10.0.2.2-10.0.2.99 for OpenStack servers (undercloud)
+      # See: "configuration/overcloud/networks.yaml"
+      allocation_pools:
+      - start: 10.0.2.100
+        end: 10.0.2.254
+
+  # The "external" network is used by OpenStack services
+  external-net:
+    type: OS::Neutron::ProviderNet
+    properties:
+      name: external
+      router_external: true
+      physical_network: datacentre # OVN maps to "br-ex" OVS bridge on NIC 1
+      network_type: vlan
+      segmentation_id: '10' # VLAN tag 10 = external
+
+  external-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: external
+      network: { get_resource: external-net }
+      enable_dhcp: false
+      ip_version: 4
+      cidr: 10.0.0.0/24
+      gateway_ip: 10.0.0.1
+      # Be careful not to overlap allocations!
+      # We've already reserved the range 10.0.0.4-10.0.0.250 for OpenStack servers (undercloud)
+      # See: "configuration/overcloud/networks.yaml"
+      allocation_pools:
+      - start: 10.0.0.251
+        end: 10.0.0.254

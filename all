@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$HERE
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+"$ROOT/manager/prepare" "$1"
+"$ROOT/undercloud/all"
+"$ROOT/infrastructure/all"
+"$ROOT/overcloud/all"
+"$ROOT/workloads/all"

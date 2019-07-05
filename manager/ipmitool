@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+PORT=${1:-6230}
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+"$ROOT/ssh" manager \
+"ipmitool -I lanplus -U admin -P password -H $(c "$VIRTUALBMC_HOST") -p $(c "$PORT") $(c "${@:2}")"

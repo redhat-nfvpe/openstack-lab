@@ -1,0 +1,26 @@
+# CLI arguments for "virt-install"
+# Run "osinfo-query os" to see options for "--os-variant"
+
+--virt-type kvm
+--graphics none
+--noautoconsole
+
+# eth0 on hypervisor control plane
+--network bridge=hypervisor,model=virtio
+
+# eth1 on OpenStack control plane
+--network bridge=openstack,model=virtio
+
+# Note that we are setting the hypervisor control plane to be on the *first* interface, eth0.
+# The reason is to save time: eth0 is initialized immediately upon boot for the CentOS GenericCloud
+# image, while eth1 has to be explicitly initialized by cloud-init, which may take a few minutes.
+
+--os-type linux
+--os-variant centos7.0
+--import --disk "path=$IMAGES/$NAME.qcow2,device=disk,bus=virtio"
+--disk "path=$IMAGES/$NAME-cloud-init.iso,device=cdrom"
+
+# See: https://images.rdoproject.org/docs/baremetal/requirements.html
+--vcpus 4
+# In MB:
+--ram 16000

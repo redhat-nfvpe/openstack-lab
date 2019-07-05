@@ -1,0 +1,122 @@
+# Infrastructure networks.
+#
+# This is a custom format ingested by "network-environment.j2.yaml" and "network-isolation.j2.yaml"
+# to generate Heat template environments. 
+#
+# This file was modified from the default at:
+#   /usr/share/openstack-tripleo-heat-templates/network_data.yaml
+#
+# Our addition is a Public network that has two intended uses:
+#
+# 1) Allows the undercloud nodes access to the outside world. This is necessary during overcloud
+#    deployment in order to download packages and container images from the Internet.
+#
+# 2) Can be used as a floating IP provider network for the overcloud, to allow workloads to be
+#    accessed by the outside world. To achieve this the Neutron ML2 plugin must be configured
+#    to map a "flat" OVN network name to a bridge.
+#
+# See: https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/custom_networks.html
+
+- name: Storage
+  vip: true
+  vlan: 30
+  name_lower: storage
+  ip_subnet: 172.16.1.0/24
+  allocation_pools:
+  - start: 172.16.1.4
+    end: 172.16.1.250
+  ipv6_subnet: fd00:fd00:fd00:3000::/64
+  ipv6_allocation_pools:
+  - start: fd00:fd00:fd00:3000::10
+    end: fd00:fd00:fd00:3000:ffff:ffff:ffff:fffe
+  mtu: 1500
+
+- name: StorageMgmt
+  name_lower: storage_mgmt
+  vip: true
+  vlan: 40
+  ip_subnet: 172.16.3.0/24
+  allocation_pools:
+  - start: 172.16.3.4
+    end: 172.16.3.250
+  ipv6_subnet: fd00:fd00:fd00:4000::/64
+  ipv6_allocation_pools:
+  - start: fd00:fd00:fd00:4000::10
+    end: fd00:fd00:fd00:4000:ffff:ffff:ffff:fffe
+  mtu: 1500
+
+- name: InternalApi
+  name_lower: internal_api
+  vip: true
+  vlan: 20
+  ip_subnet: 172.16.2.0/24
+  allocation_pools:
+  - start: 172.16.2.4
+    end: 172.16.2.250
+  ipv6_subnet: fd00:fd00:fd00:2000::/64
+  ipv6_allocation_pools:
+  - start: fd00:fd00:fd00:2000::10
+    end: fd00:fd00:fd00:2000:ffff:ffff:ffff:fffe
+  mtu: 1500
+
+- name: Tenant
+  vip: false # Tenant network does not use virtual IPs
+  name_lower: tenant
+  vlan: 50
+  ip_subnet: 172.16.0.0/24
+  allocation_pools:
+  - start: 172.16.0.4
+    end: 172.16.0.250
+  ipv6_subnet: fd00:fd00:fd00:5000::/64
+  ipv6_allocation_pools:
+  - start: fd00:fd00:fd00:5000::10
+    end: fd00:fd00:fd00:5000:ffff:ffff:ffff:fffe
+  mtu: 1500
+
+- name: External
+  vip: true
+  name_lower: external
+  vlan: 10
+  ip_subnet: 10.0.0.0/24
+  allocation_pools:
+  - start: 10.0.0.4
+    end: 10.0.0.250
+  gateway_ip: 10.0.0.1
+  ipv6_subnet: 2001:db8:fd00:1000::/64
+  ipv6_allocation_pools:
+  - start: 2001:db8:fd00:1000::10
+    end: 2001:db8:fd00:1000:ffff:ffff:ffff:fffe
+  gateway_ipv6: 2001:db8:fd00:1000::1
+  mtu: 1500
+
+- name: Public
+  vip: false
+  name_lower: public
+  ip_subnet: 10.0.2.0/24
+  allocation_pools:
+  # The range defined here is for the undercloud -- we must make sure it doesn't overlap with the
+  # overcloud range, see: "heat/templates/common.yaml"
+  - start: 10.0.2.2
+    end: 10.0.2.99
+  # The gateway is the Manager's IP address on the "public" bridge
+  gateway_ip: 10.0.2.1
+  mtu: 1500
+
+# - name: Management
+#   # Management network is enabled by default for backwards-compatibility, but
+#   # is not included in any roles by default. Add to role definitions to use.
+#   enabled: true
+#   vip: false  # Management network does not use virtual IPs
+#   name_lower: management
+#   vlan: 60
+#   ip_subnet: 10.0.1.0/24
+#   allocation_pools:
+#   - start: 10.0.1.4
+#     end: 10.0.1.250
+#   gateway_ip: 10.0.1.1
+#   ipv6_subnet: fd00:fd00:fd00:6000::/64
+#   ipv6_allocation_pools:
+#   - start: fd00:fd00:fd00:6000::10
+#     end: fd00:fd00:fd00:6000:ffff:ffff:ffff:fffe
+#   gateway_ipv6: fd00:fd00:fd00:6000::1
+#   mtu: 1500

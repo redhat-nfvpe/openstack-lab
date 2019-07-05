@@ -1,0 +1,238 @@
+# Heat Jinja2 template for configuring networking on infrastructure nodes.
+#
+# Generates the "/etc/os-net-config/config.json" file for use by the "os-net-config" tool, see:
+#   https://opendev.org/openstack/os-net-config 
+#
+# Internally delegates to the bash script at:
+#   /usr/share/openstack-tripleo-heat-templates/network/scripts/run-os-net-config.sh
+#
+# In "../environments/networking.j2.yaml" this template will be wrapped in a resource named
+# "OS::TripleO::{{role.name}}::Net::SoftwareConfig", which is instantiated in
+# "puppet/role.role.j2.yaml".
+#
+# This file was modified from the default at:
+#   /usr/share/openstack-tripleo-heat-templates/network/config/single-nic-vlans/role.role.j2.yaml
+#
+# Our addition is the creation of the "br-public" bridge.
+#
+# See: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/advanced_overcloud_customization/custom-network-interface-templates
+
+{#- Convert net map or net list to internal list of networks #}
+{#- NOTE(hjensas): For backward compatibility support role data with both #}
+{#-                networks map (new schema) and network list (old schema). #}
+{%- set _role_networks = [] %}
+{%- if role.networks is mapping %}
+{%-     for key,val in role.networks.items() %}
+{%-         set _role_networks = _role_networks.append(key) %}
+{%-     endfor %}
+{%- else %}
+{%-     set _role_networks = role.networks %}
+{%- endif %}
+heat_template_version: rocky
+description: >
+  Software Config to drive os-net-config to configure VLANs for the {{role.name}} role.
+parameters:
+  ControlPlaneIp:
+    default: ''
+    description: IP address/subnet on the ctlplane network
+    type: string
+  ControlPlaneSubnetCidr:
+    default: ''
+    description: >
+      The subnet CIDR of the control plane network. (The parameter is
+      automatically resolved from the ctlplane subnet's cidr attribute.)
+    type: string
+  ControlPlaneDefaultRoute:
+    default: ''
+    description: The default route of the control plane network. (The parameter
+      is automatically resolved from the ctlplane subnet's gateway_ip attribute.)
+    type: string
+  ControlPlaneStaticRoutes:
+    default: []
+    description: >
+      Routes for the ctlplane network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  ControlPlaneMtu:
+    default: 1500
+    description: The maximum transmission unit (MTU) size(in bytes) that is
+      guaranteed to pass through the data path of the segments in the network.
+      (The parameter is automatically resolved from the ctlplane network's mtu attribute.)
+    type: number
+{% for network in networks if network.enabled|default(true) and network.name in role.networks %}
+  {{network.name}}IpSubnet:
+    default: ''
+    description: IP address/subnet on the {{network.name_lower}} network
+    type: string
+  {{network.name}}NetworkVlanID:
+    default: {{network.vlan|default(1)}}
+    description: Vlan ID for the {{network.name_lower}} network traffic.
+    type: number
+  {{network.name}}Mtu:
+    default: {{network.mtu|default('1500')}}
+    description: The maximum transmission unit (MTU) size(in bytes) that is
+      guaranteed to pass through the data path of the segments in the
+      {{network.name}} network.
+    type: number
+{%- if network.name in role.default_route_networks %}
+  {{network.name}}InterfaceDefaultRoute:
+    default: ''
+    description: default route for the {{network.name_lower}} network
+    type: string
+{%- endif %}
+  {{network.name}}InterfaceRoutes:
+    default: []
+    description: >
+      Routes for the {{network.name_lower}} network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+{%- endfor %}
+  DnsServers: # Override this via parameter_defaults
+    default: []
+    description: >
+      DNS servers to use for the Overcloud (2 max for some implementations).
+      If not set the nameservers configured in the ctlplane subnet's
+      dns_nameservers attribute will be used.
+    type: comma_delimited_list
+  DnsSearchDomains: # Override this via parameter_defaults
+    default: []
+    description: A list of DNS search domains to be added (in order) to resolv.conf.
+    type: comma_delimited_list
+  EC2MetadataIp:
+    default: ''
+    description: The IP address of the EC2 metadata server. (The parameter
+      is automatically resolved from the ctlplane subnet's host_routes attribute.)
+    type: string
+resources:
+
+  MinViableMtu:
+    # This resource resolves the minimum viable MTU for interfaces, bonds and
+    # bridges that carry multiple VLANs. Each VLAN may have different MTU. The
+    # bridge, bond or interface must have an MTU to allow the VLAN with the
+    # largest MTU.
+    type: OS::Heat::Value
+    properties:
+      type: number
+      value:
+        yaql:
+          expression: $.data.max()
+          data:
+            - {get_param: ControlPlaneMtu}
+{%- for network in networks if network.enabled|default(true) and network.name in role.networks %}
+            - {get_param: {{network.name}}Mtu}
+{%- endfor %}
+
+  OsNetConfigImpl:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config:
+        str_replace:
+          template:
+            get_file: ../../scripts/run-os-net-config.sh
+          params:
+            $network_config:
+              network_config:
+              - type: ovs_bridge
+{%- if role.name.startswith('CephStorage') or role.name.startswith('ObjectStorage') or role.name.startswith('BlockStorage') %}
+                name: br-storage
+{%- else %}
+                name: bridge_name
+{%- endif %}
+                mtu:
+                  get_attr: [MinViableMtu, value]
+                use_dhcp: false
+                dns_servers:
+                  get_param: DnsServers
+                domain:
+                  get_param: DnsSearchDomains
+                addresses:
+                - ip_netmask:
+                    list_join:
+                    - /
+                    - - get_param: ControlPlaneIp
+                      - get_param: ControlPlaneSubnetCidr
+                routes:
+                  list_concat_unique:
+                    - get_param: ControlPlaneStaticRoutes
+                    - - ip_netmask: 169.254.169.254/32
+                        next_hop:
+                          get_param: EC2MetadataIp
+{%- if role.default_route_networks is not defined or 'ControlPlane' in role.default_route_networks %}
+                      - default: true
+                        next_hop:
+                          get_param: ControlPlaneDefaultRoute
+{%- endif %}
+                members:
+                - type: interface
+                  name: nic1
+                  mtu:
+                    get_attr: [MinViableMtu, value]
+                  # force the MAC address of the bridge to this interface
+                  primary: true
+{#- LAB: Exclude "Public" network from control plane bridge #}
+{%- for network in networks if network.enabled|default(true) and network.name in _role_networks and network.name != 'Public' %}
+                - type: vlan
+                  mtu:
+                    get_param: {{network.name}}Mtu
+                  vlan_id:
+                    get_param: {{network.name}}NetworkVlanID
+                  addresses:
+                  - ip_netmask:
+                      get_param: {{network.name}}IpSubnet
+                  routes:
+                    list_concat_unique:
+                      - get_param: {{network.name}}InterfaceRoutes
+{%-     if network.name in role.default_route_networks %}
+                      - - default: true
+                          next_hop:
+                            get_param: {{network.name}}InterfaceDefaultRoute
+{%-     endif %}
+{%- endfor %}
+{#- LAB: "Public" network is on its own bridge #}
+{%- if role.name.startswith('Controller') or role.name.startswith('Compute') %}
+              # Public network bridge
+              - type: ovs_bridge
+                name: br-public # Associated with OVN's "public" flat network in "../neutron.yaml"
+                mtu: { get_param: PublicMtu }
+                use_dhcp: false
+                dns_servers: { get_param: DnsServers }
+                addresses:
+                - ip_netmask: { get_param: PublicIpSubnet }
+{%- if role.name.startswith('Compute') %}
+                # "Compute" IP address on the office LAN
+                - ip_netmask: 192.168.1.12/24
+{%- endif %}
+                routes:
+                  list_concat_unique:
+                  - get_param: PublicInterfaceRoutes
+                  -
+{%- if role.name.startswith('Controller') %}
+                    # "Controller" default route is via the public network gateway
+                    - default: true
+                      next_hop: { get_param: PublicInterfaceDefaultRoute }
+{%- endif %}
+{%- if role.name.startswith('Compute') %}
+                    # "Compute" default route is via the office network
+                    - default: true
+                      next_hop: 192.168.1.1
+                    # "Compute" public network is accessed via the public network gateway
+                    - ip_netmask: 10.0.2.0/24
+                      next_hop: { get_param: PublicInterfaceDefaultRoute }
+{%- endif %}
+                members:
+                - type: interface
+                  name: nic2 # expected to be on second NIC
+                  mtu: { get_param: PublicMtu }
+                  primary: true # we want the bridge to use this NIC's MAC address
+{%- endif %}
+
+outputs:
+  OS::stack_id:
+    description: The OsNetConfigImpl resource.
+    value:
+      get_resource: OsNetConfigImpl

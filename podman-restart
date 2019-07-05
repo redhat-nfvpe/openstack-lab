@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+HOST=$1
+NAME=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+. "$HERE/utils/functions"
+
+if [ -z "$NAME" ]; then
+
+	"$HERE/podman" "$HOST" \
+	ps --all --format '{{.Names}}'
+
+else
+
+	C_NAME=$(c "$NAME")
+
+	"$HERE/ssh" "$HOST" "$(cat <<- EOT
+		CONTAINER_ID=\$(sudo podman ps --quiet --filter name=$C_NAME | head --lines=+1)
+		sudo podman restart "\$CONTAINER_ID"
+	EOT
+	)"
+
+fi

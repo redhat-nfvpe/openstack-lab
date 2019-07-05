@@ -1,0 +1,2 @@
+$IMAGES/$NAME.qcow2=base,80G
+$IMAGES/$NAME-cloud-init.iso=cloud-init

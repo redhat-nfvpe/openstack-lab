@@ -1,0 +1,102 @@
+# Inventory of infrastructure nodes, which can include both physical and virtual machines.
+#
+# Used by "openstack overcloud node import".
+#
+# Custom format. See:
+#   https://docs.openstack.org/tripleo-docs/latest/install/environments/baremetal.html#instackenv
+#
+# Note: This file is often named "instackenv" and is sometimes in JSON rather than YAML.
+#
+# Profiles
+# --------
+#
+# Note that the "name" property here is optional and descriptive ("openstack baremetal node list")
+# and does *not* specify the type of the infrastructure node. 
+#
+# Instead, the "profile" tag in "capabilities" can be used to make an infrastructure node assignable
+# to specific OpenStack roles. See "openstack/nodes.yaml". To assign multiple profile tags to a node
+# you must use a different syntax, e.g.:
+#
+#   capabilities: control_profile:1,compute_profile:1
+#
+# (The "1" is just a placeholder value for the tag.)
+#
+# Virtual machines
+# ----------------
+#
+# TripleO uses Ironic to manage *all* infrastructure nodes, both physical and virtual machines.
+# It does not support libvirt directly. To allow it to manage our virtual machines we've installed
+# VirtualBMC on the Manager to provide IPMI on a single IP address. Each virtual machine gets
+# its own assigned port on that IP address.
+#
+# Ceph
+# ----
+#
+# For nodes intended for Ceph (ComputeHCI) see "../ceph.yaml" for disk arrangement and
+# configuration.
+#
+# Physical machines without IMPI
+# ------------------------------
+#
+# No IPMI? No problem! Use "pm_type: manual-management" and remove other "pm_" properties. You will
+# need to keep track of the node state (via "watch openstack baremetal node list") and turn the
+# power on and off yourself when directed.
+#
+# UEFI
+# ----
+#
+# UEFI could be tricky. If your machine *only* supports UEFI then introspection would detect this
+# and then the operating system would be deployed in UEFI mode. However, many machines use UEFI but
+# for network boot (PXE) only support BIOS mode (via CSM). This means that introspection would
+# detect them as BIOS instead of UEFI and the operating system would be installed in BIOS mode. It
+# would then fail to boot from disk. If this is your situation (UEFI with BIOS-only network boot)
+# then you should set your machine to use BIOS/CSM *only*.
+#
+# See also:
+#   https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/uefi_boot.html
+#
+# Overriding
+# ----------
+#
+# By default the maximum resources reported by introspection will be available for provisioning.
+# It's possible to override these limits as well as other introspection data here, e.g.:
+#
+#  cpu: 18
+#  memory: 244141 # MiB
+#  disk: 1000 # GiB
+#  arch: x86_64
+
+nodes:
+
+- name: controller
+  _comment: virtual machine in Manager
+  capabilities: profile:control,boot_option:local
+  mac:
+  - "$CONTROLLER_MAC_ADDRESS"
+  pm_type: ipmi
+  pm_addr: "$VIRTUALBMC_HOST"
+  pm_port: $CONTROLLER_VIRTUALBMC_PORT
+  pm_user: "$VIRTUALBMC_USERNAME"
+  pm_password: "$VIRTUALBMC_PASSWORD"
+
+- name: computehci
+  _comment: bare metal
+  capabilities: profile:compute,boot_option:local
+  mac:
+  - 18:31:bf:ce:9d:5f # on LAN2 (towards PSU)
+  pm_type: ipmi
+  pm_addr: 192.168.1.50 # on LAN1 (away from PSU)
+  pm_port: 623
+  pm_user: admin
+  pm_password: admin
+
+# - name: computehci
+#   _comment: virtual machine in Manager
+#   capabilities: profile:compute,boot_option:local
+#   mac:
+#   - "$COMPUTE_MAC_ADDRESS"
+#   pm_type: ipmi
+#   pm_addr: "$VIRTUALBMC_HOST"
+#   pm_port: $COMPUTE_VIRTUALBMC_PORT
+#   pm_user: "$VIRTUALBMC_USERNAME"
+#   pm_password: "$VIRTUALBMC_PASSWORD"

@@ -1,0 +1,50 @@
+#cloud-config
+
+# That first "#cloud-config" line is required!
+# See: https://cloudinit.readthedocs.io/en/latest/
+
+output:
+  all: ">> /var/log/cloud-init.log"
+
+preserve_hostname: false
+hostname: "$NAME"
+fqdn: "$NAME.localdomain"
+
+# See: https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html
+network:
+  version: 1
+  config:
+  - type: nameserver
+    address: "$NAMESERVER"
+  # Hypervisor control plane:
+  - type: physical
+    name: eth0
+    subnets:
+    - type: dhcp
+  # OpenStack control plane:
+  - type: physical
+    name: eth1
+    subnets:
+    - type: dhcp
+
+users:
+- name: "$USERNAME"
+  groups: wheel
+  shell: /bin/bash
+  sudo: ALL=(ALL) NOPASSWD:ALL
+  lock_passwd: false
+  passwd: "$PASSWORD"
+  ssh-authorized-keys:
+  - "$KEY"
+
+timezone: "$TIMEZONE"
+
+runcmd:
+# Note: TripleO needs the OpenStack control plane interface defined *but unused*,
+# so *don't* do this:
+#- dhclient eth1
+# We don't need cloud-init anymore:
+- systemctl disable cloud-config.service
+- systemctl disable cloud-final.service
+- systemctl disable cloud-init-local.service
+- systemctl disable cloud-init.service

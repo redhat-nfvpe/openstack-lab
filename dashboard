@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$HERE
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == 'stop' ]; then
+
+	# See: https://stackoverflow.com/a/15198031
+	"$ROOT/ssh" \
+		-o ControlMaster=no \
+		-S "$SSH_CONTROL_ROOT/openstack-dashboard" \
+		-O exit \
+		openstack-dashboard
+
+else
+
+	"$ROOT/ssh" -fN openstack-dashboard
+
+	. "$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
+	
+	echo "Username: $OS_USERNAME"
+	echo "Password: $OS_PASSWORD"
+
+	xdg-open "http://localhost:$OPENSTACK_LOCAL_DASHBOARD_PORT"
+
+fi

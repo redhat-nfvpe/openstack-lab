@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+NAME=$1
+PORT=$2
+
+EQ_NAME=$(eq "$NAME")
+C_NAME=$(c "$NAME")
+C_PORT=$(c "$PORT")
+C_VIRTUALBMC_USERNAME=$(c "$VIRTUALBMC_USERNAME")
+C_VIRTUALBMC_PASSWORD=$(c "$VIRTUALBMC_PASSWORD")
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m "[manager-root] Ensuring VirtualBMC configured for virtual machine \"$EQ_NAME\""
+
+	vbmc delete $C_NAME || true
+
+	vbmc add $C_NAME \
+		--address 192.168.122.1 \
+		--port $C_PORT \
+		--username $C_VIRTUALBMC_USERNAME \
+		--password $C_VIRTUALBMC_PASSWORD
+
+	vbmc start $C_NAME
+
+	firewall-cmd --permanent --add-port=$C_PORT/udp
+	firewall-cmd --reload
+
+EOT
+)"

@@ -1,0 +1,27 @@
+<!--
+Hypervisor control plane.
+
+Used internally on the Manager to control libvirt's virtual machines (e.g. via ssh) and is set
+for host NAT forwarding in order to allow virtual machines to access the outside world (e.g. to
+download packages from the Internet). Virtual machines can communicate with each other on this
+network.
+
+See: https://libvirt.org/formatnetwork.html
+-->
+
+<network>
+  <name>hypervisor-control-plane</name>
+  <!-- bridge name length should be no longer than 11 -->
+  <bridge name="hypervisor"/>
+  <forward mode="nat"/> <!-- do *not* specify "dev" here -->
+  <ip address="192.168.122.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="192.168.122.2" end="192.168.122.254"/>
+    </dhcp>
+  </ip>
+  <!--<ip family="ipv6" address="2001:db8:ca2:2::1" prefix="64">
+    <dhcp>
+      <range start="2001:db8:ca2:2:1::10" end="2001:db8:ca2:2:1::ff"/>
+    </dhcp>
+  </ip>-->
+</network>

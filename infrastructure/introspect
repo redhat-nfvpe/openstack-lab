@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+if [ -n "$CONTROLLER_VIRTUALBMC_PORT" ]; then
+	CONTROLLER_MAC_ADDRESS=$("$ROOT/manager/get-mac-address" openstack-controller openstack)
+fi
+
+if [ -n "$COMPUTE_VIRTUALBMC_PORT" ]; then
+	COMPUTE_MAC_ADDRESS=$("$ROOT/manager/get-mac-address" openstack-compute openstack)
+fi
+
+NODES_YAML=$(cat "$ROOT/configuration/overcloud/nodes.yaml" |
+	CONTROLLER_MAC_ADDRESS=$(eq "$CONTROLLER_MAC_ADDRESS") \
+	CONTROLLER_VIRTUALBMC_PORT=$(eq "$CONTROLLER_VIRTUALBMC_PORT") \
+	COMPUTE_MAC_ADDRESS=$(eq "$COMPUTE_MAC_ADDRESS") \
+	COMPUTE_VIRTUALBMC_PORT=$(eq "$COMPUTE_VIRTUALBMC_PORT") \
+	VIRTUALBMC_HOST=$(eq "$VIRTUALBMC_HOST") \
+	VIRTUALBMC_USERNAME=$(eq "$VIRTUALBMC_USERNAME") \
+	VIRTUALBMC_PASSWORD=$(eq "$VIRTUALBMC_PASSWORD") \
+	envsubst)
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/stackrc"
+
+	INFRASTRUCTURE="\$HOME/overcloud/infrastructure"
+	mkdir --parents "\$INFRASTRUCTURE/"
+
+	m '[tripleo] Updating inventory of infrastructure nodes'
+
+	echo $(c "$NODES_YAML") \
+		> "\$INFRASTRUCTURE/nodes.yaml"
+
+	# Note: "import" will update nodes if they already exist, but other nodes will *not* be deleted,
+	# so make sure to run "openstack/infrastructure/clean"
+
+	openstack \
+	overcloud node import "\$INFRASTRUCTURE/nodes.yaml" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	m '[tripleo] Introspecting infrastructure nodes (~ 5 minutes)'
+	openstack \
+	overcloud node introspect --all-manageable \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	m '[tripleo] Cleaning infrastructure nodes (~ 5 minutes)'
+	# Not needed if clean_nodes=True in undercloud.conf
+	openstack \
+	overcloud node clean computehci \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	mkdir --parents "\$INFRASTRUCTURE/introspection"
+	for NAME in \$(openstack baremetal node list --format value --column Name); do
+		m "[tripleo] Retrieving introspection results for infrastructure node \"\$NAME\""
+		openstack baremetal introspection data save "\$NAME" $(c "$TRIPLEO_VERBOSITY") | \
+			jq -M . > "\$INFRASTRUCTURE/\$NAME.json"
+	done
+
+	m '[tripleo] Ensuring infrastructure nodes are "available"'
+	openstack \
+	overcloud node provide --all-manageable \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"

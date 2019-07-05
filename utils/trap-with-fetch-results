@@ -1,0 +1,3 @@
+. "$ROOT/utils/traps"
+
+trap EXIT_trap_fetch_results EXIT

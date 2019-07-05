@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+
+IMAGE_NAME=$1
+DISK_SIZE=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+EQ_IMAGE_NAME=$(eq "$IMAGE_NAME")
+C_IMAGE_NAME=$(c "$IMAGE_NAME")
+EQ_DISK_SIZE=$(eq "$DISK_SIZE")
+C_DISK_SIZE=$(c "$DISK_SIZE")
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	if [ -f $C_IMAGE_NAME ]; then
+		m "[manager-root] Virtual machine disk image already exists: \"$EQ_IMAGE_NAME\""
+		exit
+	fi
+
+	m "[manager-root] Creating virtual machine disk image: \"$EQ_IMAGE_NAME\" ($EQ_DISK_SIZE)"
+	mkdir --parents \$(dirname $C_IMAGE_NAME)
+	qemu-img create $C_IMAGE_NAME $C_DISK_SIZE
+
+EOT
+)"

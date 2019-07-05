@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+# For quality of life we will make sure that the "openstack" command (Cliff) will always limit its
+# output width to the width of our terminal ("CLIFF_FIT_WIDTH=1" doesn't seem to work)
+
+"$ROOT/ssh" tripleo \
+". \"\$HOME/stackrc\"
+CLIFF_MAX_TERM_WIDTH=\"$(tput cols)\" \
+openstack $(c "$@") $(c "$TRIPLEO_VERBOSITY")"

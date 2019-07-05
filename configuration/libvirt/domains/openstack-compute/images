@@ -1,0 +1,2 @@
+$IMAGES/$NAME.qcow2=80G
+$IMAGES/$NAME-ceph.qcow2=100G

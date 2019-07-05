@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$HERE
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+ssh -F "$WORKSPACE_ROOT/ssh.config" "$@"

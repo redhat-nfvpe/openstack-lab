@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+# See: https://bugzilla.redhat.com/show_bug.cgi?id=1723107
+#      https://opendev.org/openstack/ironic-python-agent/src/branch/master/ironic_python_agent/hardware.py#L933
+
+HARDWARE_PY=$(cat "$ROOT/patches/ironic-python-agent/hardware.py")
+
+"$ROOT/ssh" -t tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[tripleo] Cloning git repository for "ironic-python-agent" and committing our patch'
+
+	rm --force --recursive "\$HOME/source/ironic-python-agent/"
+	mkdir --parents "\$HOME/source/"
+	cd "\$HOME/source/"
+	git clone https://opendev.org/openstack/ironic-python-agent.git
+	cd ironic-python-agent
+	echo $(c "$HARDWARE_PY") > ironic_python_agent/hardware.py
+	git add ironic_python_agent/hardware.py
+	git config user.email "lab@lab.org"
+	git config user.name "Lab"
+	git commit --message="Patch for #1723107"
+
+	m '[tripleo] Fixing default images configuration to install virtualenv'
+
+	# To install "ironic-python-agent" from source requires virtualenv 
+	# See: https://docs.openstack.org/diskimage-builder/latest/elements/pip-and-virtualenv/README.html
+	sudo sed --in-place \
+		's/override-pip-and-virtualenv/pip-and-virtualenv/g' \
+		/usr/share/openstack-tripleo-common/image-yaml/overcloud-images.yaml
+
+EOT
+)"

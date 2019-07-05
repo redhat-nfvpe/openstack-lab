@@ -1,0 +1,97 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+C_MANAGER_OFFICE_INTERFACE=$(c "$MANAGER_OFFICE_INTERFACE")
+EQ_MANAGER_OFFICE_INTERFACE=$(eq "$MANAGER_OFFICE_INTERFACE")
+C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=$(c "$MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE")
+
+"$ROOT/utils/delete-ssh-config" tripleo
+
+ssh -i "$KEYS_ROOT/root@manager" "root@$MANAGER_OFFICE_IP_ADDRESS" "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Ensuring no libvirt virtual machines'
+
+	for UUID in \$(virsh list --uuid); do
+		virsh destroy "\$UUID"
+	done
+	for UUID in \$(virsh list --all --uuid); do
+		virsh undefine "\$UUID" --managed-save --remove-all-storage --delete-snapshots --snapshots-metadata --nvram  
+	done
+
+	m '[manager-root] Ensuring no libvirt volumes'
+
+	for NAME in \$(virsh vol-list images 2> /dev/null | tail --lines=+3 | head --line=-1 | cut --fields=2 --delimiter=' '); do
+		virsh vol-delete "\$NAME" --pool images
+	done
+
+	m '[manager-root] Ensuring no libvirt networks'
+
+	for UUID in \$(virsh -r net-list --uuid); do
+		virsh net-destroy "\$UUID"
+	done
+	for UUID in \$(virsh -r net-list --all --uuid); do
+		virsh net-undefine "\$UUID"
+	done
+
+	m '[manager-root] Ensuring no network bridges (~ 15 seconds)'
+
+	systemctl stop network.service
+
+	cat > /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OFFICE_INTERFACE <<- _EOT
+		DEVICE=$EQ_MANAGER_OFFICE_INTERFACE
+		TYPE=Ethernet
+		ONBOOT=yes
+		BOOTPROTO=dhclient
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OFFICE_INTERFACE.bak
+
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public.bak
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public:0
+	rm --force /etc/sysconfig/network-scripts/ifcfg-public:0.bak
+	rm --force /etc/sysconfig/network-scripts/ifcfg-openstack
+	rm --force /etc/sysconfig/network-scripts/ifcfg-openstack.bak
+	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE
+	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE.bak
+
+	systemctl start network.service
+
+	dhclient -r $C_MANAGER_OFFICE_INTERFACE || true
+	dhclient $C_MANAGER_OFFICE_INTERFACE
+
+	# TODO: NetworkManager bridge does not work
+	#nmcli connection delete openstack || true
+	#nmcli connection delete $C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE || true
+
+	m '[manager-root] Ensuring VirtualBMC service is disabled'
+
+ 	systemctl stop vbmcd || true
+ 	systemctl disable vbmcd || true
+	rm --force /etc/systemd/system/vbmcd.service
+	systemctl daemon-reload
+	rm --recursive --force /etc/virtualbmc/
+
+	if [ -n "$CONTROLLER_IPMI_PORT" ]; then
+		firewall-cmd --permanent --remove-port="$CONTROLLER_IPMI_PORT/udp"
+		firewall-cmd --reload
+	fi
+
+	m '[manager-root] Ensuring no user "manager"...'
+
+		if id -u manager > /dev/null; then
+		userdel --force --remove manager
+	fi
+
+EOT
+)"
+
+"$ROOT/utils/delete-ssh-config" manager
+"$ROOT/utils/delete-ssh-config" manager-root

@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+INTERFACE=$2
+USERNAME=$3
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+EQ_NAME=$(eq "$NAME")
+EQ_USERNAME=$(eq "$USERNAME")
+
+while true; do
+	m "[manager-root] Waiting for virtual machine \"$EQ_NAME\" to get an IP address on hypervisor control plane..."
+	IP_ADDRESS=$("$HERE/get-ipv4-address" "$NAME" "$INTERFACE")
+	if [ -n "$IP_ADDRESS" ]; then
+		break
+	fi
+	sleep 1
+done
+
+m "Virtual machine \"$EQ_NAME\" has IP address on hypervisor control plane: $IP_ADDRESS"
+
+# Give it some time to fully come up
+m "Waiting 5 seconds to ensure that virtual machine \"$EQ_NAME\" is ready for ssh connections..."
+sleep 5
+
+m "[manager] Ensuring keypair authorization for user \"$EQ_USERNAME\" on virtual machine \"$EQ_NAME\""
+"$ROOT/utils/ensure-ssh-config-proxy" "$NAME" "$IP_ADDRESS" "$USERNAME" "$USERNAME@$NAME" manager

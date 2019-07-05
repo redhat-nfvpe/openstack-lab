@@ -1,0 +1,93 @@
+#
+# Orchestrator
+#
+
+WORKSPACE_ROOT="$ROOT/workspace"
+PASSWORDS_ROOT="$WORKSPACE_ROOT/passwords"
+KEYS_ROOT="$WORKSPACE_ROOT/keys"
+SSH_CONTROL_ROOT="$WORKSPACE_ROOT/ssh-control"
+
+#
+# Manager
+#
+
+MANAGER_OFFICE_IP_ADDRESS=192.168.1.11
+MANAGER_OFFICE_INTERFACE=enp2s0
+MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=enp1s0
+
+# The host must be accessible from the TripleO virtual machine 
+# Our default is the hypverisor's address on its control plane network
+# See "libvirt/networks/hypervisor-control-plane.xml"
+VIRTUALBMC_HOST=192.168.122.1
+
+# See: https://pypi.org/project/virtualbmc/
+VIRTUALBMC_VERSION=1.5.0
+
+# See: https://pypi.org/project/python-openstackclient/
+PYTHON_OPENSTACKCLIENT_VERSION=3.19.0
+
+# See: https://pypi.org/project/python-heatclient/
+PYTHON_HEATCLIENT_VERSION=1.17.0
+
+#
+# Operating system images
+#
+# For OpenStack servers, OpenStack infrastructure nodes, and Manager VMs 
+# 
+
+# Default user for CentOS GenericCloud is "centos"
+CENTOS7_IMAGE_VERSION=1905
+CENTOS7_IMAGE="http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-$CENTOS7_IMAGE_VERSION.qcow2"
+
+NAMESERVER=1.0.0.1
+
+TIMEZONE=America/Chicago
+
+#
+# TripleO
+#
+
+TRIPLEO_VERBOSITY=-vv
+
+TRIPLEO_OVERCLOUD_HEAT_STACK=lab
+
+# OpenStack 14 is "stein" 
+TRIPLEO_VERSION=stein
+
+# The default container image tag is "current-tripleo-rdo", which can break our deployment because
+# 1) it is updated often and can introduce breaking changes to these scripts, and 2) it is not set
+# simultaneously on all container images, so that if we download images *while* it is being set
+# (which is often) then we would be getting images of different versions, which may very well be
+# incompatible and lead to failed deployments. It is thus best to use a specific ID tag that has
+# been tested and known to work. While experimenting with tags beware of "error pulling image" in
+# the logs, indicating that some images of our tag may not have been uploaded yet.
+#
+# For an example tag, see: https://hub.docker.com/r/tripleostein/centos-binary-nova-api/tags
+TRIPLEO_CONTAINER_IMAGE_TAG=d45bbddf5063604b241bc8f14e39d90cae03de8b_24ce03e4
+#TRIPLEO_CONTAINER_IMAGE_TAG=current-tripleo-rdo
+
+#
+# Ceph
+#
+
+# Ceph 14 is "nautilus"
+# (You do not really have a choice here: you must use the Ceph version packaged for the TripleO
+# version)
+CEPH_VERSION=nautilus
+
+# See: https://hub.docker.com/r/ceph/daemon/tags
+# Or run: skopeo inspect docker://docker.io/ceph/daemon
+CEPH_CONTAINER_IMAGE_TAG="v4.0.0-stable-4.0-$CEPH_VERSION-centos-7-x86_64"
+
+#
+# OpenStack
+#
+
+OPENSTACK_LOCAL_DASHBOARD_PORT=8080
+
+VIRTUALBMC_USERNAME=admin
+VIRTUALBMC_PASSWORD=password
+
+# Setting these will implicitly create virtual machines
+CONTROLLER_VIRTUALBMC_PORT=6230
+#COMPUTE_VIRTUALBMC_PORT=6231

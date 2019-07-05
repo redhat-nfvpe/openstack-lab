@@ -1,0 +1,88 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$HERE
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+echo "Fetching results to $(q "$WORKSPACE_ROOT")"
+
+if [ "$1" == '-c' ]; then
+	rm --recursive --force \
+		"$WORKSPACE_ROOT/configuration/" \
+		"$WORKSPACE_ROOT/logs/"
+fi
+
+mkdir --parents \
+	"$WORKSPACE_ROOT/configuration/" \
+	"$WORKSPACE_ROOT/logs/"
+
+function r () {
+	"$ROOT/rsync" \
+		--rsync-path="sudo rsync" \
+		--timeout=2 \
+		--recursive \
+		--copy-links \
+		--delete --delete-excluded --ignore-errors \
+		--prune-empty-dirs \
+		"$@" 2> /dev/null
+}
+
+function configuration () {
+	r \
+		--include=*/ \
+		--include=*.sh \
+		--include=*.conf \
+		--include=*.ini \
+		--include=*.yaml \
+		--include=*.json \
+		--exclude=* \
+		"$1:/home/manager/" \
+		"$1:/home/tripleo/" \
+		"$1:/var/lib/config-data/puppet-generated/" \
+		"$1:/var/lib/heat-config" \
+		"$1:/var/lib/mistral" \
+		"$1:/usr/share/openstack-tripleo-heat-templates" \
+		"$1:/usr/share/openstack-tripleo-common" \
+		"$WORKSPACE_ROOT/configuration/$1/"
+}
+
+function logs () {
+	r \
+		--include=*/ \
+		--exclude=lab-config.tar.gz \
+		--include=*.log \
+		--include=*.tar.gz \
+		--exclude=* \
+		"$1:/home/manager/" \
+		"$1:/home/tripleo/" \
+		"$1:/var/log/libvirt/qemu" \
+		"$1:/var/log/virtualbmc" \
+		"$1:/var/log/openvswitch" \
+		"$1:/var/log/ceph" \
+		"$1:/var/log/containers/" \
+		"$1:/var/log/tripleo-container-image-prepare.log" \
+		"$1:/var/lib/mistral" \
+		"$WORKSPACE_ROOT/logs/$1/"
+}
+
+set +e
+
+configuration manager
+configuration tripleo
+configuration lab-controller-0
+configuration lab-computehci-0
+
+logs manager
+logs tripleo
+logs lab-controller-0
+logs lab-computehci-0
+
+# Unpack tarballs
+find "$WORKSPACE_ROOT/logs/" -type f -name "*.tar.gz" |
+while read F; do
+	D=${F%.tar.gz}
+	mkdir --parents "$D"
+	tar xf "$F" -C "$D"
+done

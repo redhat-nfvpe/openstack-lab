@@ -1,0 +1,81 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+USERNAME=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+Q_NAME=$(q "$NAME")
+EQ_NAME=$(eq "$NAME")
+C_NAME=$(c "$NAME")
+
+# Create images
+while IFS= read -r LINE; do
+	LINE=$(echo "$LINE" |
+		IMAGES=/home/manager/libvirt/images \
+		NAME=$EQ_NAME \
+		envsubst)
+
+	# Parse line (IMAGE_NAME=V)
+	IMAGE_NAME=${LINE%=*}
+	V=${LINE#*=}
+
+	# See: https://stackoverflow.com/a/35208546
+	if [ "$V" == 'cloud-init' ]; then
+		CLOUD_INIT=true
+		echo '' | "$HERE/create-virtual-machine-cloud-init-image" "$IMAGE_NAME" "$NAME" "$USERNAME"
+	elif [ "${V:0:5}" == 'base,' ]; then
+		echo '' | "$HERE/create-virtual-machine-image-from-base" "$IMAGE_NAME" "${V:5}"
+	else
+		echo '' | "$HERE/create-virtual-machine-image" "$IMAGE_NAME" "$V"
+	fi
+done < "$ROOT/configuration/libvirt/domains/$NAME/images"
+
+VIRT_INSTALL_ARGUMENTS=$(command_line_ini "$ROOT/configuration/libvirt/domains/$NAME/virt-install.arguments" |
+	IMAGES=/home/manager/libvirt/images \
+	NAME=$EQ_NAME \
+	envsubst)
+
+if [ "$CLOUD_INIT" == 'true' ]; then
+	m "[manager] Ensuring keypair for virtual machine \"$NAME\" installed"
+	
+	"$ROOT/rsync" \
+		--rsync-path='mkdir --parents /home/manager/keys/ && rsync' \
+		"$KEYS_ROOT/$USERNAME@$NAME" \
+		"$KEYS_ROOT/$USERNAME@$NAME.pub" \
+		manager:/home/manager/keys/
+
+	# Protect keys
+	"$ROOT/ssh" manager \
+		chmod --recursive go-rwx /home/manager/keys/
+
+fi
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	if virsh domstate $C_NAME 2> /dev/null; then
+		m "[manager-root] Virtual machine \"$EQ_NAME\" already exists"
+		exit
+	fi
+
+	m "[manager-root] Creating virtual machine \"$EQ_NAME\""
+	sudo virt-install \
+		$VIRT_INSTALL_ARGUMENTS \
+		--name $C_NAME
+
+	m "[manager-root] Ensuring virtual machine \"$EQ_NAME\" will autostart"
+	virsh autostart --domain $C_NAME
+
+	if [ "$CLOUD_INIT" == 'true' ]; then
+		m "[manager-root] Ejecting cloud-init configuration disk from virtual machine \"$EQ_NAME\""
+		virsh change-media $C_NAME hda --eject --config || true
+	fi
+
+EOT
+)"

@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+"$ROOT/rsync" \
+	--rsync-path='mkdir --parents /home/manager/workloads/ && rsync' \
+	"$ROOT/configuration/overcloud/heat/templates/common.yaml" \
+	manager:/home/manager/workloads/
+
+m '[cloud] Creating common'
+"$ROOT/openstack" \
+stack create common \
+	--template /home/manager/workloads/common.yaml \
+	--parameter "centos7-image-url=$CENTOS7_IMAGE" \
+	--wait -v

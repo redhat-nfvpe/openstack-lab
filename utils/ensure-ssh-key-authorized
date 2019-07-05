@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+# ssh-copy-id is unfortunately buggy and will create duplicate keys
+# See: https://superuser.com/a/264401
+
+KEY=$1
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+"$HERE/ensure-ssh-key-exists" "$KEY"
+
+C_KEY=$(c "$(< "$KEYS_ROOT/$KEY.pub")")
+
+"${@:2}" "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	echo $C_KEY | while read -r KTYPE KEY COMMENT; do
+		if ! (grep --no-messages --fixed-strings --word-regexp "\$KTYPE \$KEY" ~/.ssh/authorized_keys | grep --quiet --invert-match --fixed-strings '^#'); then
+			mkdir --parents --mode=0700 ~/.ssh
+			echo "\$KTYPE \$KEY \$COMMENT" >> ~/.ssh/authorized_keys
+			chmod 600 ~/.ssh/authorized_keys
+			m 'Added key to "authorized_keys"'
+		else
+			m 'Key already in "authorized_keys"'
+		fi
+	done
+
+EOT
+)"

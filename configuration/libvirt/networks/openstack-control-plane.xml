@@ -1,0 +1,31 @@
+<!--
+OpenStack control plane.
+
+Used by our infrastructure manager (TripleO) to control and provision OpenStack nodes.
+
+The bridge itself must be created outside of libvirt.
+
+There are two main ways to configure this bridge:
+
+1) Dedicated LAN for the OpenStack control plane. In this case all OpenStack nodes will be on this
+   LAN. Your Manager will also need a dedicated NIC on this LAN, and it should be added to the
+   bridge.
+
+2) Single LAN. This is a more complicated scenario. In this case your Manager just needs a single
+   NIC. However, you will also need to configure your router. First you will need to IP route
+   192.168.24.0/24 to your Manager IP address. This will allow the OpenStack nodes to access the
+   OpenStack manager. Then you'll need to configure your router's DHCP server to forward PXE
+   requests to 192.168.24.1, which is the OpenStack manager's TFTP server.
+
+Note that virtual machines that need to PXE-boot from this network will need it connected as the
+first network, eth0, because libvirt's PXE only works on eth0.
+
+See: https://libvirt.org/formatnetwork.html
+-->
+
+<network>
+  <name>openstack-control-plane</name>
+  <!-- bridge name length should be no longer than 11 -->
+  <bridge name="openstack"/>
+  <forward mode="bridge"/>
+</network>

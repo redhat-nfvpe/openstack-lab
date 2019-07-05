@@ -1,0 +1,68 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+UNDERCLOUD_CONF=$(cat "$ROOT/configuration/undercloud/undercloud.conf" |
+	HOME=/home/tripleo \
+	NAME=$(eq 'tripleo') \
+	NAMESERVER=$(eq "$NAMESERVER") \
+	envsubst)
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m "[tripleo] Updating \"\$HOME/undercloud.conf\""
+	echo $(c "$UNDERCLOUD_CONF") > "\$HOME/undercloud.conf"
+
+	m '[tripleo] Updating Heat environment for container images'
+
+	# Used by "container_images_file" in "undercloud.conf"
+	# Note: We are using the same container images environment for the undercloud and the overcloud
+	# Note: This file is often called "containers-prepare-parameter.yaml" in the documentation
+
+	# BUG: using "--local-push-destination" would result in a failure to pull the images during
+	# "overcloud deploy". See possibly:
+	# https://bugzilla.redhat.com/show_bug.cgi?id=1704838
+	# https://bugzilla.redhat.com/show_bug.cgi?id=1696393
+
+	mkdir --parents "\$HOME/undercloud/"
+	openstack \
+	tripleo container image prepare default \
+	    --local-push-destination \
+  		--output-env-file "\$HOME/undercloud/container-images.default.yaml" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	# See: /var/log/tripleo-container-image-prepare.log
+
+	# Annoyingly, the TripleO default locks some container images at specific versions while leaving
+	# others at latest upstream versions, so we will make sure to manually lock those, too
+
+	python2 <<- _EOT
+		import yaml
+
+		with open("\$HOME/undercloud/container-images.default.yaml") as f:
+		  y = yaml.load(f)
+
+		s = y["parameter_defaults"]["ContainerImagePrepare"][0]["set"]
+		s["tag"] = $(q "$TRIPLEO_CONTAINER_IMAGE_TAG")
+		s["ceph_tag"] = $(q "$CEPH_CONTAINER_IMAGE_TAG")
+
+		with open("\$HOME/undercloud/container-images.yaml", "w") as f:
+		  yaml.dump(y, f, default_flow_style=False)
+	_EOT
+
+	m '[tripleo] Ensuring TripleO is deployed (~ 20 minutes)'
+	openstack \
+	undercloud install \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"
+
+"$HERE/patch"

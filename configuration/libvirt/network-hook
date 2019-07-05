@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# See: https://libvirt.org/hooks.html
+# https://wiki.libvirt.org/page/Networking
+# /etc/sysconfig/iptables
+
+NETWORK=$1
+OPERATION=$2
+SUB_OPERATION=$3
+
+function nat () {
+	local ACTION=$1
+	local IP=$2
+
+	# Based on Jamie Nguyen's NAT example:
+	#   https://jamielinux.com/docs/libvirt-networking-handbook/appendix/example-of-iptables-nat.html
+	#   https://jamielinux.com/docs/libvirt-networking-handbook/custom-nat-based-network.html
+
+	# See also Karl Rupp's tutorial:
+	#   https://www.karlrupp.net/en/computer/nat_tutorial
+
+	# Table: mangle
+
+	# DHCP packets sent to VMs have no checksum (due to a longstanding bug).
+	iptables --table mangle "$ACTION" POSTROUTING --out-interface "$NETWORK" --protocol udp --match udp --dport 68 --jump CHECKSUM --checksum-fill
+
+	# Table: nat	
+
+	# Do not masquerade to these reserved address blocks.
+	iptables --table nat "$ACTION" POSTROUTING --source "$IP" --destination 224.0.0.0/24 --jump RETURN
+	iptables --table nat "$ACTION" POSTROUTING --source "$IP" --destination 255.255.255.255/32 --jump RETURN
+	# Masquerade all packets going from VMs to the LAN/Internet.
+	iptables --table nat "$ACTION" POSTROUTING --source "$IP" ! --destination "$IP" --protocol tcp --jump MASQUERADE --to-ports 1024-65535
+	iptables --table nat "$ACTION" POSTROUTING --source "$IP" ! --destination "$IP" --protocol udp --jump MASQUERADE --to-ports 1024-65535
+	iptables --table nat "$ACTION" POSTROUTING --source "$IP" ! --destination "$IP" --jump MASQUERADE
+
+	# Table: filter
+
+	# Accept DNS (port 53) and DHCP (port 67) packets from VMs.
+	iptables --table filter "$ACTION" INPUT --in-interface "$NETWORK" --protocol udp --match udp --match multiport --dports 53,67 --jump ACCEPT
+	iptables --table filter "$ACTION" INPUT --in-interface "$NETWORK" --protocol tcp --match tcp --match multiport --dports 53,67 --jump ACCEPT
+	# Allow established traffic to the private subnet.
+	iptables --table filter "$ACTION" FORWARD --destination "$IP" --out-interface "$NETWORK" --match conntrack --ctstate RELATED,ESTABLISHED --jump ACCEPT
+	# Allow outbound traffic from the private subnet.
+	iptables --table filter "$ACTION" FORWARD --source "$IP" --in-interface "$NETWORK" --jump ACCEPT
+	# Allow traffic between virtual machines.
+	iptables --table filter "$ACTION" FORWARD --in-interface "$NETWORK" --out-interface "$NETWORK" --jump ACCEPT
+	# Reject everything else.
+	iptables --table filter "$ACTION" FORWARD --in-interface "$NETWORK" --jump REJECT --reject-with icmp-port-unreachable
+	iptables --table filter "$ACTION" FORWARD --out-interface "$NETWORK" --jump REJECT --reject-with icmp-port-unreachable
+
+	iptables --flush
+}
+
+if [ "$NETWORK" == 'public' ]; then
+
+	IP='10.0.2.0/24'
+
+	if [ "$OPERATION" == 'start' ]; then
+		nat --append "$IP"
+	elif [ "$OPERATION" == 'stopped' ]; then
+		nat --delete "$IP"
+	fi
+
+fi

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+HOST=$1
+
+HERE=$(dirname "$(readlink -f "$0")")
+. "$HERE/utils/functions"
+
+"$HERE/ssh" -t "$HOST" \
+"sudo podman $(c "${@:2}")"

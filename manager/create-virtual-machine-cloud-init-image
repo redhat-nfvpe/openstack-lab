@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+# See: https://stafwag.github.io/blog/blog/2019/03/03/howto-use-centos-cloud-images-with-cloud-init/
+# See: https://github.com/giovtorres/kvm-install-vm/blob/master/kvm-install-vm
+# See: https://cloudinit.readthedocs.io/en/latest/index.html
+
+IMAGE_NAME=$1
+NAME=$2
+USERNAME=$3
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+EQ_IMAGE_NAME=$(eq "$IMAGE_NAME")
+C_IMAGE_NAME=$(c "$IMAGE_NAME")
+
+"$ROOT/utils/ensure-ssh-key-exists" "$USERNAME@$NAME"
+KEY=$(< "$KEYS_ROOT/$USERNAME@$NAME.pub")
+
+CLOUD_CONFIG=$(cat "$ROOT/configuration/libvirt/domains/$NAME/cloud-config.yaml" | 
+	NAME=$EQ_NAME \
+	NAMESERVER=$(eq "$NAMESERVER") \
+	TIMEZONE=$(eq "$TIMEZONE") \
+	USERNAME=$(eq "$USERNAME") \
+	PASSWORD=$(eq "$PASSWORD") \
+	KEY=$(eq "$KEY") \
+	envsubst)
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	if [ -f $C_IMAGE_NAME ]; then
+		m "[manager-root] Cloud-init configuration disk image already exists: \"$EQ_IMAGE_NAME\""
+		exit
+	fi
+
+	m "[manager-root] Creating cloud-init configuration disk image: \"$EQ_IMAGE_NAME\""
+	CONFIG="${EQ_IMAGE_NAME}.cloud-config.yaml"
+	echo $(c "$CLOUD_CONFIG") > "\$CONFIG"
+	cloud-localds $C_IMAGE_NAME "\$CONFIG"
+
+EOT
+)"

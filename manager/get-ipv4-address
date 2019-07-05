@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+INTERFACE=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+C_NAME=$(c "$NAME")
+C_INTERFACE=$(c "$INTERFACE")
+
+IP_ADDRESSES=$("$ROOT/ssh" manager-root "$(cat <<- EOT
+	set -e
+	virsh domifaddr $C_NAME --interface $C_INTERFACE --source agent 2> /dev/null |
+	tail --lines=+3 |
+	head --lines=-1 |
+	awk '{ split(\$4,a,"/"); print \$3 "=" a[1] }'
+EOT
+)")
+
+if [ "$IP_ADDRESSES" != 'N/A=N' ]; then
+	eval "$IP_ADDRESSES"
+	echo "$ipv4"
+fi

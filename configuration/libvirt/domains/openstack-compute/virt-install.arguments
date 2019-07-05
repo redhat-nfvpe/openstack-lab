@@ -1,0 +1,28 @@
+# CLI arguments for "virt-install"
+# Run "osinfo-query os" to see options for "--os-variant"
+
+--virt-type kvm
+--graphics none
+--noautoconsole
+--pxe
+
+# eth0 on OpenStack control plane
+# Note that we are setting the OpenStack control plane to be on the *first* interface, eth0, because
+# PXE is enabled for eth0 only
+--network bridge=openstack,model=virtio
+
+# eth1 is our public network
+--network bridge=public,model=virtio
+
+# eth2 on hypervisor control plane
+#--network bridge=hypervisor,model=virtio
+
+--os-type linux
+--os-variant centos7.0
+--disk "path=$IMAGES/$NAME.qcow2,device=disk,bus=virtio"
+--disk "path=$IMAGES/$NAME-ceph.qcow2,device=disk,bus=virtio"
+
+# See: https://images.rdoproject.org/docs/baremetal/requirements.html
+--vcpus 4
+# In MB:
+--ram 16000

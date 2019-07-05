@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/utils/functions"
+
+"$ROOT/ssh" manager-root \
+"virsh $(c "$@")"

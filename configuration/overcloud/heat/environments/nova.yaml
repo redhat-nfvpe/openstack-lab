@@ -1,0 +1,13 @@
+# Nova configuration.
+#
+# This is a Heat template environment.
+#
+# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+
+parameter_defaults:
+
+  # If your compute nodes are virtual machines then they may not support the default "kvm" type
+  # (You would see "No valid host was found. There are not enough hosts available." errors when
+  # deploying servers, caused by "could not find capabilities for domaintype=kvm" errors in
+  # "/var/log/containers/nova/nova-conductor.log" on the controller.)
+  #NovaComputeLibvirtType: qemu

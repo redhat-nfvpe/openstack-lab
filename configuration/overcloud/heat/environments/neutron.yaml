@@ -1,0 +1,35 @@
+# Neutron configuration.
+#
+# This is a Heat template environment.
+#
+# Neutron is installed on the controller node with its ML2 plugin, which is in turn configured to
+# use the OVN agent. (OpenStack versions before "stein" used the OVS agent.)
+#
+# Many of these values will be set in
+# "/var/lib/config-data/neutron/etc/neutron/plugins/ml2/ml2_conf.ini".
+#
+# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+
+parameter_defaults:
+
+  # OVN "flat" network names
+  NeutronFlatNetworks: datacentre,public
+
+  # OVN "vlan" network names
+  # Note that "datacentre" can also be used a flat network, as defined above (untagged, or VLAN=1)
+  NeutronNetworkVLANRanges: datacentre:1:1000
+
+  # Maps OVN network names to OVS bridges (via "ovn::controller::ovn_bridge_mappings")
+  # See: "sudo ovs-vsctl get open . external_ids:ovn-bridge-mappings"
+  NeutronBridgeMappings: datacentre:br-ex,public:br-public
+
+  # List of network types (will be used in order)
+  NeutronNetworkType: geneve,vlan
+
+  # Customize bonding options
+  BondInterfaceOvsOptions: bond_mode=active-backup
+
+  # Define the DNS servers (maximum 2)
+  # When the list is not set or empty the nameservers on the ctlplane subnets will be used
+  # (ctlplane subnets nameservers are controlled by "undercloud_nameservers" option in "undercloud.conf")
+  DnsServers: []

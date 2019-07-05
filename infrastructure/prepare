@@ -1,0 +1,65 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+"$HERE/patch"
+
+EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
+EQ_CEPH_VERSION=$(eq "$CEPH_VERSION")
+
+# Using "-t" to improve wget display
+"$ROOT/ssh" -t tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	if [ ! -f "\$HOME/images/centos7.qcow2" ]; then
+		m "[tripleo] Downloading base image: \"\$HOME/images/centos7.qcow2\""
+		mkdir --parents "\$HOME/images/"
+		wget --output-document="\$HOME/images/centos7.qcow2" $(c "$CENTOS7_IMAGE")
+	fi
+
+	. "\$HOME/stackrc"
+
+	m '[tripleo] Ensuring infrastructure images are built (~ 5 minutes)'
+
+	# Default configs are in: /usr/share/openstack-tripleo-common/image-yaml/
+
+	DIB_YUM_REPO_CONF="/etc/yum.repos.d/delorean.repo /etc/yum.repos.d/delorean-$EQ_TRIPLEO_VERSION-testing.repo /etc/yum.repos.d/tripleo-centos-ceph-$EQ_CEPH_VERSION.repo" \
+	DIB_LOCAL_IMAGE="\$HOME/images/centos7.qcow2" \
+	DIB_INSTALLTYPE_ironic_agent=source \
+	DIB_REPOTYPE_ironic_agent=git \
+	DIB_REPOLOCATION_ironic_agent="\$HOME/source/ironic-python-agent" \
+	openstack \
+	overcloud image build \
+		--output-directory "\$HOME/images/" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+	m '[tripleo] Ensuring infrastructure images are uploaded'
+
+	openstack \
+	overcloud image upload \
+		--image-path "\$HOME/images/" \
+		--update-existing \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"
+
+if [ -n "$CONTROLLER_VIRTUALBMC_PORT" ]; then
+	"$ROOT/manager/create-virtual-machine" openstack-controller
+	"$ROOT/manager/enable-virtual-machine-virtualbmc" openstack-controller "$CONTROLLER_VIRTUALBMC_PORT"
+fi
+
+if [ -n "$COMPUTE_VIRTUALBMC_PORT" ]; then
+	"$ROOT/manager/create-virtual-machine" openstack-compute
+	"$ROOT/manager/enable-virtual-machine-virtualbmc" openstack-compute "$COMPUTE_VIRTUALBMC_PORT"
+fi

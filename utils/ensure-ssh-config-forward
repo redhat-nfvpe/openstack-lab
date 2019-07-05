@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+HOST=$2
+USERNAME=$3
+KEY=$4
+PORT=$5
+LOCAL=$6
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+"$HERE/delete-ssh-config" "$NAME"
+
+cat >> "$WORKSPACE_ROOT/ssh.config" <<- EOT
+	Host "$NAME"
+	  HostName "$HOST"
+	  User "$USERNAME"
+	  IdentityFile "$KEYS_ROOT/$KEY"
+	  LocalForward "$PORT" "$LOCAL"
+	  ControlMaster yes
+	  ControlPath "$SSH_CONTROL_ROOT/$NAME"
+
+EOT
+
+mkdir --parents "$SSH_CONTROL_ROOT/"

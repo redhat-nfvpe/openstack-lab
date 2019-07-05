@@ -1,0 +1,22 @@
+<!--
+Public network.
+
+Used for Neutron's floating IPs in OpenStack.
+
+The OpenStack controller node will be bridging to its interface on this network using OVS, and that
+bridge will be mapped to an OVN "flat" network, which in turn will be used by Neturon's ML2 plugin
+and defined as a provider network. 
+
+We are deliberately not enabling DHCP on this network: instead, we will use fixed addresses and keep
+track of them manually. For example, 10.0.2.2 will be used by the controller. See:
+"../../openstack/node-networking.j2.yaml".
+
+See: https://libvirt.org/formatnetwork.html
+-->
+
+<network>
+  <name>public</name>
+  <!-- bridge name length should be no longer than 11 -->
+  <bridge name="public"/>
+  <forward mode="bridge"/>
+</network>

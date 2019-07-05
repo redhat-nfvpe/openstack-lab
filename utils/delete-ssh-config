@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+NAME=$1
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+CONFIG="$WORKSPACE_ROOT/ssh.config"
+
+if [ -f "$CONFIG" ]; then
+	sed --in-place "/Host \"$NAME\"/,/^$/d" "$CONFIG"
+fi

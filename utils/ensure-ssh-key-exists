@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+KEY=$1
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+if [ ! -f "$KEYS_ROOT/$KEY" ]; then
+	mkdir --parents "$KEYS_ROOT"
+	ssh-keygen -f "$KEYS_ROOT/$KEY" -t rsa -N ''
+fi

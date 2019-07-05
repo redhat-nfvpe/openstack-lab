@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+# Note: use "_" instead of "-" for NETWORK
+
+NAME=$1
+NETWORK=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+C_NAME=$(c "$NAME")
+
+MAC_ADDRESSES=$("$ROOT/ssh" manager-root "$(cat <<- EOT
+	set -e
+	virsh domiflist $C_NAME 2> /dev/null |
+	tail --lines=+3 |
+	head --lines=-1 |
+	awk '{ split(\$5,a,"/"); print \$3 "=" a[1] }' |
+	sed 's/\-/_/g'
+EOT
+)")
+
+eval "$MAC_ADDRESSES"
+echo "${!NETWORK}"

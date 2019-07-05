@@ -1,0 +1,35 @@
+# Apply Heat environments in order.
+#
+# Answers file for "openstack overcloud deploy".
+
+environments:
+
+# Define from where to fetch service container images
+- "$ENVIRONMENTS/container-images.yaml"
+
+# Map node roles to our "heat/templates/networking.j2.yaml"
+# And import our "networks.yaml"
+- "$ENVIRONMENTS/networking.yaml"
+
+# Create ports for each service of each node role on the networks defined above
+- "$ENVIRONMENTS/network-isolation.yaml"
+
+# Ceph-Ansible (used by ComputeHCI role)
+# See: http://docs.ceph.com/ceph-ansible/
+#      https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/ceph_config.html
+- "$ENVIRONMENTS/ceph-ansible/ceph-ansible.yaml"
+
+# Improve throughput performance for hyperconverged ComputeHCI scenario
+- "$ENVIRONMENTS/tuned-ceph-filestore-hci.yaml"
+
+# Request infrastructure nodes per each node role
+- "$ENVIRONMENTS/roles.yaml"
+
+# Configure Nova
+- "$ENVIRONMENTS/nova.yaml"
+
+# Configure Neutron
+- "$ENVIRONMENTS/neutron.yaml"
+
+# Configure Ceph
+- "$ENVIRONMENTS/ceph.yaml"
