@@ -1,9 +1,9 @@
 Chapter 1: Hardware Requirements and Setup
 ==========================================
 
-These scripts will be running on what we'll call our "Orchestrator" computer. We'll also be fetching
-logs from our lab to it, under the `workspace/` directory here. We will be doing no changes to this
-machine so it's perfectly fine to use an existing workstation.
+Our scripts will be running on what we'll call our "Orchestrator" computer. We'll also be fetching
+logs from our lab to it, under the `workspace/` directory here. We will be making no changes to this
+machine so it should be fine to use an existing workstation.
 
 The lab itself comprises a minimum of 2 computers and two LANs:
 

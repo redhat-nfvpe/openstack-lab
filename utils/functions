@@ -68,7 +68,8 @@ function command_line_ini () {
 }
 
 # See: https://www.rosehosting.com/blog/generate-password-linux-command-line/#2-Generate-a-strong-password-with-urandom
-# For consistency with TripleO we chose a length of 25
+# For consistency with TripleO we choose a default length of 25
 function random_password () {
-	< /dev/urandom tr --delete --complement A-Za-z0-9 | head --bytes=25
+	local LENGTH=${1:-25}
+	< /dev/urandom tr --delete --complement A-Za-z0-9 | head --bytes="$LENGTH"
 }

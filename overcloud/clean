@@ -7,17 +7,23 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap-with-fetch-results"
 
-"$ROOT/manager/undercloud/openstack" \
+m '[tripleo] Deleting overcloud'
+
+"$ROOT/undercloud/openstack" \
 overcloud delete "$TRIPLEO_OVERCLOUD_HEAT_STACK" \
 	--yes
 
-"$ROOT/manager/undercloud/openstack" \
+m '[tripleo] Cleaning nodes'
+
+"$ROOT/undercloud/openstack" \
 baremetal node manage computehci
 
-"$ROOT/manager/undercloud/openstack" \
+"$ROOT/undercloud/openstack" \
 overcloud node clean computehci
 
-"$ROOT/manager/undercloud/openstack" \
+"$ROOT/undercloud/openstack" \
 overcloud node provide computehci
+
+m '[tripleo] Removing dashboard configuration'
 
 "$ROOT/utils/delete-ssh-config" openstack-dashboard

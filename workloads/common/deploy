@@ -16,9 +16,11 @@ fi
 	"$ROOT/configuration/overcloud/heat/templates/common.yaml" \
 	manager:/home/manager/workloads/
 
-m '[cloud] Creating common'
+m '[openstack] Creating common'
 "$ROOT/openstack" \
 stack create common \
 	--template /home/manager/workloads/common.yaml \
 	--parameter "centos7-image-url=$CENTOS7_IMAGE" \
+	--parameter "fedora-image-url=$FEDORA_IMAGE" \
+	--parameter "fedora-image-version=$FEDORA_IMAGE_VERSION" \
 	--wait -v

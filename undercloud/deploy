@@ -26,11 +26,6 @@ UNDERCLOUD_CONF=$(cat "$ROOT/configuration/undercloud/undercloud.conf" |
 	# Note: We are using the same container images environment for the undercloud and the overcloud
 	# Note: This file is often called "containers-prepare-parameter.yaml" in the documentation
 
-	# BUG: using "--local-push-destination" would result in a failure to pull the images during
-	# "overcloud deploy". See possibly:
-	# https://bugzilla.redhat.com/show_bug.cgi?id=1704838
-	# https://bugzilla.redhat.com/show_bug.cgi?id=1696393
-
 	mkdir --parents "\$HOME/undercloud/"
 	openstack \
 	tripleo container image prepare default \

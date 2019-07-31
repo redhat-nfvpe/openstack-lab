@@ -306,7 +306,10 @@ sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
 	m '[manager] Ensuring OpenStack client is installed'
 	pip3 install --user --upgrade \
 		python-openstackclient==$(c "$PYTHON_OPENSTACKCLIENT_VERSION") \
-		python-heatclient==$(c "$PYTHON_HEATCLIENT_VERSION")
+		python-heatclient==$(c "$PYTHON_HEATCLIENT_VERSION") \
+		python-neutronclient==$(c "$PYTHON_NEUTRONCLIENT_VERSION") \
+		python-swiftclient==$(c "$PYTHON_SWIFTCLIENT_VERSION") \
+		python-octaviaclient==$(c "$PYTHON_OCTAVIACLIENT_VERSION")
 
 	m '[tripleo] Updating OpenStack Cliff configuration'
 

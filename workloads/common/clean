@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-m '[cloud] Deleting common'
+m '[openstack] Deleting common'
 "$ROOT/openstack" \
 stack delete common \
 	--wait -v || true

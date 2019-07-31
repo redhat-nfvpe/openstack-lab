@@ -1,0 +1,58 @@
+#!/bin/bash
+set -e
+
+DOMAIN=$1
+PROJECT=$2
+USERNAME=$3
+PASSWORD=$4
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+function o () {
+	"$ROOT/openstack-tenant" "$DOMAIN" "$PROJECT" "$USERNAME" "$PASSWORD" "$@"
+}
+
+function d () {
+	local ITEM=$1
+	for ID in $(o $ITEM list --format value --column ID --project "$PROJECT"); do
+		m "[openstack] Deleting $ITEM $ID"
+		o $ITEM delete "$ID"
+	done
+}
+
+m "[openstack] Cleaning $PROJECT..."
+
+d 'server'
+d 'volume'
+d 'floating ip'
+d 'loadbalancer'
+
+for ID in $(o router list --format value --column ID --project "$PROJECT"); do
+	# Ports have to be removed first
+	for PORT_ID in $(o port list --format value --column ID --router "$ID"); do
+		o router remove port "$ID" "$PORT_ID"
+	done
+
+	m "[openstack] Deleting router $ID"
+	o router delete "$ID"
+done
+
+for ID in $(o port list --format value --column ID --project "$PROJECT"); do
+	# Network trunks have to be deleted first
+	TRUNK_ID=$(o port show "$ID" --format json --column trunk_details | python2 -c 'import sys, json; d = json.load(sys.stdin)["trunk_details"]; print d["trunk_id"] if d != None else ""')
+	if [ -n "$TRUNK_ID" ]; then
+		m "[openstack] Deleting network trunk $TRUNK_ID"
+		o network trunk delete "$TRUNK_ID"
+	fi
+
+	m "[openstack] Deleting port $ID"
+	o port delete "$ID"
+done
+
+d 'subnet'
+d 'network'
+d 'security group'

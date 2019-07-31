@@ -11,6 +11,6 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 
-ADDRESSES=$("$ROOT/undercloud/openstack" server show "$NAME" --format value --column addresses | sed 's/\-/_/g')
+ADDRESSES=$("$HERE/openstack" server show "$NAME" --format value --column addresses | sed 's/\-/_/g')
 eval "$ADDRESSES"
 echo "${!NETWORK}"

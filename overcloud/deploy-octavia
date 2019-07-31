@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+OCTAVIA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/octavia.yaml" |
+	PASSPHRASE=$(eq "$(random_password 32)") \
+	envsubst)
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/stackrc"
+
+	DEPLOY="\$HOME/overcloud/deploy"
+	TEMPLATES="\$DEPLOY/templates"
+	INFRASTRUCTURE="\$HOME/overcloud/infrastructure"
+
+	m '[tripleo] Updating Heat environment for Octavia'
+	echo $(c "$OCTAVIA_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/octavia.yaml"
+
+	m '[tripleo] Deploying Octavia'
+	openstack \
+	overcloud deploy \
+		--stack $(c "$TRIPLEO_OVERCLOUD_HEAT_STACK") \
+		--templates "\$TEMPLATES/" \
+		--networks-file "\$INFRASTRUCTURE/networks.yaml" \
+		--roles-file "\$INFRASTRUCTURE/roles.yaml" \
+		--answers-file "\$DEPLOY/heat-environments.yaml" \
+		--environment-file "\$TEMPLATES/environments/services/octavia.yaml" \
+		--environment-file "\$TEMPLATES/environments/octavia.yaml" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"

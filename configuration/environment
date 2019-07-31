@@ -29,6 +29,15 @@ PYTHON_OPENSTACKCLIENT_VERSION=3.19.0
 # See: https://pypi.org/project/python-heatclient/
 PYTHON_HEATCLIENT_VERSION=1.17.0
 
+# See: https://pypi.org/project/python-neutronclient/
+PYTHON_NEUTRONCLIENT_VERSION=6.12.0
+
+# See: https://pypi.org/project/python-swiftclient/
+PYTHON_SWIFTCLIENT_VERSION=3.8.0
+
+# See: https://pypi.org/project/python-octaviaclient/
+PYTHON_OCTAVIACLIENT_VERSION=1.9.0
+
 #
 # Operating system images
 #
@@ -38,6 +47,10 @@ PYTHON_HEATCLIENT_VERSION=1.17.0
 # Default user for CentOS GenericCloud is "centos"
 CENTOS7_IMAGE_VERSION=1905
 CENTOS7_IMAGE="http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-$CENTOS7_IMAGE_VERSION.qcow2"
+
+# See: https://alt.fedoraproject.org/cloud/
+FEDORA_IMAGE_VERSION=30
+FEDORA_IMAGE="https://download.fedoraproject.org/pub/fedora/linux/releases/$FEDORA_IMAGE_VERSION/Cloud/x86_64/images/Fedora-Cloud-Base-$FEDORA_IMAGE_VERSION-1.2.x86_64.qcow2"
 
 NAMESERVER=1.0.0.1
 

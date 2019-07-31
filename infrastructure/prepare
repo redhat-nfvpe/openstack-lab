@@ -21,10 +21,13 @@ EQ_CEPH_VERSION=$(eq "$CEPH_VERSION")
 
 	$SCRIPT_PREAMBLE
 
-	if [ ! -f "\$HOME/images/centos7.qcow2" ]; then
-		m "[tripleo] Downloading base image: \"\$HOME/images/centos7.qcow2\""
-		mkdir --parents "\$HOME/images/"
-		wget --output-document="\$HOME/images/centos7.qcow2" $(c "$CENTOS7_IMAGE")
+	BASE_IMAGE_NAME="\$HOME/images/centos7.qcow2"
+
+	if [ ! -f "\$BASE_IMAGE_NAME" ]; then
+		m "[tripleo] Downloading base image: \"\$BASE_IMAGE_NAME\""
+		mkdir --parents "\$(dirname "\$BASE_IMAGE_NAME")"
+		wget --output-document="\$BASE_IMAGE_NAME.xz" $(c "$CENTOS7_IMAGE.xz")
+		xz --decompress "\$BASE_IMAGE_NAME.xz"
 	fi
 
 	. "\$HOME/stackrc"
@@ -34,7 +37,7 @@ EQ_CEPH_VERSION=$(eq "$CEPH_VERSION")
 	# Default configs are in: /usr/share/openstack-tripleo-common/image-yaml/
 
 	DIB_YUM_REPO_CONF="/etc/yum.repos.d/delorean.repo /etc/yum.repos.d/delorean-$EQ_TRIPLEO_VERSION-testing.repo /etc/yum.repos.d/tripleo-centos-ceph-$EQ_CEPH_VERSION.repo" \
-	DIB_LOCAL_IMAGE="\$HOME/images/centos7.qcow2" \
+	DIB_LOCAL_IMAGE="\$BASE_IMAGE_NAME" \
 	DIB_INSTALLTYPE_ironic_agent=source \
 	DIB_REPOTYPE_ironic_agent=git \
 	DIB_REPOLOCATION_ironic_agent="\$HOME/source/ironic-python-agent" \

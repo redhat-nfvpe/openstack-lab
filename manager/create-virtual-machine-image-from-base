@@ -14,7 +14,7 @@ C_IMAGE_NAME=$(c "$IMAGE_NAME")
 EQ_DISK_SIZE=$(eq "$DISK_SIZE")
 C_DISK_SIZE=$(c "$DISK_SIZE")
 C_BASE_IMAGE_URL=$(c "$CENTOS7_IMAGE")
-BASE_IMAGE_NAME=/home/manager/libvirt/images/centos7.qcow2
+C_BASE_IMAGE_NAME=$(c "/home/manager/libvirt/images/centos7.qcow2")
 
 "$ROOT/ssh" manager-root -tt "$(cat <<- EOT
 
@@ -25,17 +25,18 @@ BASE_IMAGE_NAME=/home/manager/libvirt/images/centos7.qcow2
 		exit
 	fi
 
-	if [ -f $BASE_IMAGE_NAME ]; then
-		m "[manager-root] Base image already exists: \"$BASE_IMAGE_NAME\""
+	if [ -f $C_BASE_IMAGE_NAME ]; then
+		m "[manager-root] Base image already exists: \"$C_BASE_IMAGE_NAME\""
 	else
-		m "[manager-root] Downloading base image: \"$BASE_IMAGE_NAME\""
-		mkdir --parents \$(dirname $BASE_IMAGE_NAME)
-		wget --output-document=$BASE_IMAGE_NAME $C_BASE_IMAGE_URL
+		m "[manager-root] Downloading base image: \"$C_BASE_IMAGE_NAME\""
+		mkdir --parents "\$(dirname $C_BASE_IMAGE_NAME)"
+		wget --output-document=$C_BASE_IMAGE_NAME.xz $C_BASE_IMAGE_URL.xz
+		xz --decompress $C_BASE_IMAGE_NAME.xz
 	fi
 
 	m "[manager-root] Creating virtual machine disk image: \"$EQ_IMAGE_NAME\" ($EQ_DISK_SIZE)"
 	mkdir --parents \$(dirname $C_IMAGE_NAME)
-	cp $BASE_IMAGE_NAME $C_IMAGE_NAME
+	cp $C_BASE_IMAGE_NAME $C_IMAGE_NAME
 	qemu-img resize $C_IMAGE_NAME $C_DISK_SIZE
 
 EOT

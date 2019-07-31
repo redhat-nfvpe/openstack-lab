@@ -1,0 +1,14 @@
+# Octavia configuration.
+#
+# This is a Heat template environment.
+#
+# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+
+parameter_defaults:
+
+  # Note: must be *exactly* 32 characters long
+  # (The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it) 
+  OctaviaServerCertsKeyPassphrase: $PASSPHRASE
+
+  #OctaviaAmphoraImageTag:
+

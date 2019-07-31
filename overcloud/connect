@@ -19,7 +19,7 @@ m "[tripleo] Fetching infrastructure nodes access keypair"
 
 for NAME in $("$ROOT/undercloud/openstack" server list --format value --column Name); do
 	EQ_NAME=$(eq "$NAME")
-	IP_ADDRESS=$("$ROOT/infrastructure/get-ipv4-address" "$NAME" ctlplane)
+	IP_ADDRESS=$("$ROOT/undercloud/get-ipv4-address" "$NAME" ctlplane)
 	if [ -n "$IP_ADDRESS" ]; then
 		m "[tripleo] Enabling ssh access to infrastructure server \"$EQ_NAME\" on ctlplane: $IP_ADDRESS"
 		"$ROOT/utils/ensure-ssh-config-proxy" "$NAME" "$IP_ADDRESS" heat-admin tripleo tripleo
@@ -31,7 +31,7 @@ done
 m "[tripleo] Fetching OpenStack access credentials"
 
 "$ROOT/rsync" \
-	tripleo:/home/tripleo/labrc \
+	"tripleo:/home/tripleo/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc" \
 	"$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
 
 "$ROOT/rsync" \

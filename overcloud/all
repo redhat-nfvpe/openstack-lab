@@ -9,8 +9,8 @@ ROOT=$(readlink -f "$HERE/..")
 
 if [ "$1" == '-c' ]; then
 	"$HERE/clean"
-	"$HERE/infrastructure/clean"
 fi
 
 "$HERE/deploy"
+"$HERE/deploy-octavia"
 "$HERE/connect"

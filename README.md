@@ -30,7 +30,7 @@ Instructions
 Special Thanks
 --------------
 
-The following people may not show up in the commit history but deserve credit for contributing:
+The following people may not show up in the commit history but have made contributions:
 
 * Aaron Smith
 * Andrew Bays

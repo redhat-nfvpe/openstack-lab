@@ -11,6 +11,14 @@ parameters:
     type: string
     label: CentOS 7 GenericCloud image URL
 
+  fedora-image-url:
+    type: string
+    label: Fedora GenericCloud image URL
+
+  fedora-image-version:
+    type: string
+    label: Fedora GenericCloud image version
+
 resources:
 
   # Flavors
@@ -67,11 +75,24 @@ resources:
     properties:
       name: centos7
       visibility: public
-      os_distro: CentOS
+      os_distro: centos # should be lowercase
       os_version: '7'
       architecture: x86_64
       # Default user for CentOS GenericCloud is "centos"
       location: { get_param: centos7-image-url }
+      container_format: bare
+      disk_format: qcow2
+
+  fedora:
+    type: OS::Glance::WebImage
+    properties:
+      name: fedora
+      visibility: public
+      os_distro: fedora # should be lowercase
+      os_version: { get_param: fedora-image-version }
+      architecture: x86_64
+      # Default user TODO
+      location: { get_param: fedora-image-url }
       container_format: bare
       disk_format: qcow2
 
