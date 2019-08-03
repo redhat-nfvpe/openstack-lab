@@ -24,6 +24,6 @@ overcloud node clean computehci
 "$ROOT/undercloud/openstack" \
 overcloud node provide computehci
 
-m '[tripleo] Removing dashboard configuration'
+m '[manager] Disconnecting dashboard'
 
 "$ROOT/utils/delete-ssh-config" openstack-dashboard

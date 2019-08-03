@@ -31,7 +31,7 @@ NODES_YAML=$(cat "$ROOT/configuration/overcloud/nodes.yaml" |
 
 	. "\$HOME/stackrc"
 
-	INFRASTRUCTURE="\$HOME/overcloud/infrastructure"
+	INFRASTRUCTURE="\$HOME/infrastructure"
 	mkdir --parents "\$INFRASTRUCTURE/"
 
 	m '[tripleo] Updating inventory of infrastructure nodes'
@@ -57,7 +57,6 @@ NODES_YAML=$(cat "$ROOT/configuration/overcloud/nodes.yaml" |
 	overcloud node clean computehci \
 		$(c "$TRIPLEO_VERBOSITY")
 
-	mkdir --parents "\$INFRASTRUCTURE/introspection"
 	for NAME in \$(openstack baremetal node list --format value --column Name); do
 		m "[tripleo] Retrieving introspection results for infrastructure node \"\$NAME\""
 		openstack baremetal introspection data save "\$NAME" $(c "$TRIPLEO_VERBOSITY") | \
@@ -68,6 +67,17 @@ NODES_YAML=$(cat "$ROOT/configuration/overcloud/nodes.yaml" |
 	openstack \
 	overcloud node provide --all-manageable \
 		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"
+
+# HACK
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	/etc/libvirt/hooks/network public start
 
 EOT
 )"

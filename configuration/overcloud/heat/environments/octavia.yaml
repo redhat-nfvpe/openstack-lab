@@ -7,8 +7,8 @@
 parameter_defaults:
 
   # Note: must be *exactly* 32 characters long
-  # (The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it) 
+  # BUG: The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it
+  # See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
   OctaviaServerCertsKeyPassphrase: $PASSPHRASE
 
   #OctaviaAmphoraImageTag:
-

@@ -34,7 +34,8 @@ ROOT=$(readlink -f "$HERE/..")
 	for ID in \$(openstack image list --format value --column ID); do
 		m "[tripleo] Deleting infrastructure image \"\$ID\""
 		openstack \
-			image delete "\$ID"
+		image delete "\$ID" \
+			$(c "$TRIPLEO_VERBOSITY")
 	done
 
 	#m '[tripleo] Ensuring no infrastructure images'

@@ -7,5 +7,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-"$HERE/prepare" "$1"
-"$HERE/introspect"
+m '[orchestrator] Enabling IP route to Public network via Manager'
+
+sudo ip route del 10.0.2.0/24 || true
+sudo ip route add 10.0.2.0/24 via "$MANAGER_OFFICE_IP_ADDRESS"

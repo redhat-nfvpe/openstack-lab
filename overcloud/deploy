@@ -19,15 +19,15 @@ NETWORKING_TEMPLATE_J2_YAML=$(cat "$ROOT/configuration/overcloud/heat/templates/
 
 ROLES_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/roles.yaml")
 
-NOVA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/nova.yaml")
-
 NEUTRON_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/neutron.yaml")
+
+NOVA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/nova.yaml")
 
 CEPH_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/ceph.yaml")
 
 HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.yaml" |
 	HOME=/home/tripleo \
-	ENVIRONMENTS=/home/tripleo/overcloud/deploy/templates/environments \
+	ENVIRONMENTS=/home/tripleo/overcloud/templates/environments \
 	envsubst)
 
 "$ROOT/ssh" tripleo "$(cat <<- EOT
@@ -36,11 +36,11 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 
 	. "\$HOME/stackrc"
 
-	DEPLOY="\$HOME/overcloud/deploy"
-	TEMPLATES="\$DEPLOY/templates"
-	TEMPLATES_J2="\$DEPLOY/templates.j2"
-	INFRASTRUCTURE="\$HOME/overcloud/infrastructure"
-	rm --recursive --force "\$DEPLOY/"
+	OVERCLOUD="\$HOME/overcloud"
+	TEMPLATES="\$OVERCLOUD/templates"
+	TEMPLATES_J2="\$OVERCLOUD/templates.j2"
+	INFRASTRUCTURE="\$HOME/infrastructure"
+	rm --recursive --force "\$OVERCLOUD/"
 	mkdir --parents "\$TEMPLATES/"
 	mkdir --parents "\$TEMPLATES_J2/"
 	mkdir --parents "\$INFRASTRUCTURE/"
@@ -129,13 +129,13 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 	echo $(c "$ROLES_ENVIRONMENT_YAML") \
 		> "\$TEMPLATES/environments/roles.yaml"
 
-	m '[tripleo] Updating Heat environment for Nova'
-	echo $(c "$NOVA_ENVIRONMENT_YAML") \
-		> "\$TEMPLATES/environments/nova.yaml"
-
 	m '[tripleo] Updating Heat environment for Neutron'
 	echo $(c "$NEUTRON_ENVIRONMENT_YAML") \
 		> "\$TEMPLATES/environments/neutron.yaml"
+
+	m '[tripleo] Updating Heat environment for Nova'
+	echo $(c "$NOVA_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/nova.yaml"
 
 	m '[tripleo] Updating Heat environment for Ceph'
 	echo $(c "$CEPH_ENVIRONMENT_YAML") \
@@ -143,7 +143,7 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 
 	m '[tripleo] Updating Heat environment selection'
 	echo $(c "$HEAT_ENVIRONMENTS_YAML") \
-		> "\$DEPLOY/heat-environments.yaml"
+		> "\$OVERCLOUD/heat-environments.yaml"
 
 	m '[tripleo] Deploying OpenStack'
 	# The stack name will be used as a prefix for server names and for the "rc" file (e.g. "labrc")
@@ -153,7 +153,7 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 		--templates "\$TEMPLATES/" \
 		--networks-file "\$INFRASTRUCTURE/networks.yaml" \
 		--roles-file "\$INFRASTRUCTURE/roles.yaml" \
-		--answers-file "\$DEPLOY/heat-environments.yaml" \
+		--answers-file "\$OVERCLOUD/heat-environments.yaml" \
 		$(c "$TRIPLEO_VERBOSITY")
 
 EOT

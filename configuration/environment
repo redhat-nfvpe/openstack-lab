@@ -50,7 +50,8 @@ CENTOS7_IMAGE="http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCl
 
 # See: https://alt.fedoraproject.org/cloud/
 FEDORA_IMAGE_VERSION=30
-FEDORA_IMAGE="https://download.fedoraproject.org/pub/fedora/linux/releases/$FEDORA_IMAGE_VERSION/Cloud/x86_64/images/Fedora-Cloud-Base-$FEDORA_IMAGE_VERSION-1.2.x86_64.qcow2"
+FEDORA_IMAGE_RELEASE_VERSION=1.2
+FEDORA_IMAGE="https://download.fedoraproject.org/pub/fedora/linux/releases/$FEDORA_IMAGE_VERSION/Cloud/x86_64/images/Fedora-Cloud-Base-$FEDORA_IMAGE_VERSION-$FEDORA_IMAGE_RELEASE_VERSION.x86_64.qcow2"
 
 NAMESERVER=1.0.0.1
 
@@ -87,10 +88,12 @@ TRIPLEO_CONTAINER_IMAGE_TAG=d45bbddf5063604b241bc8f14e39d90cae03de8b_24ce03e4
 # (You do not really have a choice here: you must use the Ceph version packaged for the TripleO
 # version)
 CEPH_VERSION=nautilus
+CEPH_RELEASE_VERSION=4.0
+CEPH_RELEASE_SUB_VERSION=4.0.2
 
 # See: https://hub.docker.com/r/ceph/daemon/tags
 # Or run: skopeo inspect docker://docker.io/ceph/daemon
-CEPH_CONTAINER_IMAGE_TAG="v4.0.0-stable-4.0-$CEPH_VERSION-centos-7-x86_64"
+CEPH_CONTAINER_IMAGE_TAG="v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSION-$CEPH_VERSION-centos-7-x86_64"
 
 #
 # OpenStack

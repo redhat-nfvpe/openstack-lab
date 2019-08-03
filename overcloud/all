@@ -12,5 +12,5 @@ if [ "$1" == '-c' ]; then
 fi
 
 "$HERE/deploy"
-"$HERE/deploy-octavia"
 "$HERE/connect"
+"$HERE/deploy-octavia"
