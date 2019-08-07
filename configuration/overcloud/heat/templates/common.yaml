@@ -78,7 +78,7 @@ resources:
       os_distro: centos # should be lowercase
       os_version: '7'
       architecture: x86_64
-      # Default user for CentOS GenericCloud is "centos"
+      # Default user is "centos"
       location: { get_param: centos7-image-url }
       container_format: bare
       disk_format: qcow2
@@ -91,7 +91,7 @@ resources:
       os_distro: fedora # should be lowercase
       os_version: { get_param: fedora-image-version }
       architecture: x86_64
-      # Default user TODO
+      # Default user is "fedora"
       location: { get_param: fedora-image-url }
       container_format: bare
       disk_format: qcow2

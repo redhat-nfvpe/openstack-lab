@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap-with-fetch-results"
 
-m '[tripleo] Deleting overcloud'
+m '[tripleo] Deleting overcloud (~ 10 minutes)'
 
 "$ROOT/undercloud/openstack" \
 overcloud delete "$TRIPLEO_OVERCLOUD_HEAT_STACK" \

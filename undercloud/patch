@@ -9,8 +9,13 @@ ROOT=$(readlink -f "$HERE/..")
 
 # See: https://review.opendev.org/#/c/665324/
 #      https://bugzilla.redhat.com/show_bug.cgi?id=1602844
-
 STANDARD_PY=$(cat "$ROOT/patches/ironic-inspector/standard.py")
+
+# See: https://review.opendev.org/#/c/669195/
+#      https://review.opendev.org/#/c/670820/ 
+#      https://bugzilla.redhat.com/show_bug.cgi?id=1703045
+OCTAVIA_DEPLOYMENT_CONFIG_J2_YAML=$(cat "$ROOT/patches/openstack-tripleo-heat-templates/octavia-deployment-config.j2.yaml")
+OCTAVIA_FILES_YAML=$(cat "$ROOT/patches/openstack-tripleo-common/octavia-files.yaml")
 
 "$ROOT/ssh" tripleo "$(cat <<- EOT
 
@@ -19,9 +24,32 @@ STANDARD_PY=$(cat "$ROOT/patches/ironic-inspector/standard.py")
 	m '[tripleo] Patching "ironic_inspector"'
 	MOUNT=\$(sudo podman mount ironic_inspector)
 	echo $(c "$STANDARD_PY") | sudo tee "\$MOUNT/usr/lib/python2.7/site-packages/ironic_inspector/plugins/standard.py"
+	sudo podman umount ironic_inspector
 
 	m '[tripleo] Restarting "ironic_inspector"'
 	sudo systemctl restart tripleo_ironic_inspector
+
+# 	m '[tripleo] Patching "openstack-tripleo-heat-templates"'
+# 	echo $(c "$OCTAVIA_DEPLOYMENT_CONFIG_J2_YAML") | sudo tee /usr/share/openstack-tripleo-heat-templates/deployment/octavia/octavia-deployment-config.j2.yaml
+# 
+# 	m '[tripleo] Patching "openstack-tripleo-common"'
+# 
+# 	echo $(c "$OCTAVIA_FILES_YAML") | sudo tee /usr/share/openstack-tripleo-common/playbooks/octavia-files.yaml
+# 	
+# 	function p () {
+# 		MOUNT=\$(sudo podman mount \$1)
+# 		echo $(c "$OCTAVIA_FILES_YAML") | sudo tee "\$MOUNT/usr/share/openstack-tripleo-common/playbooks/octavia-files.yaml"
+# 		sudo podman umount \$1
+# 
+# 		m "[tripleo] Restarting \"\$1\""
+# 		sudo systemctl restart "tripleo_\$1"
+# 	}
+# 
+# 	p nova_scheduler
+# 	p mistral_executor
+# 	p mistral_engine
+# 	p mistral_api
+# 	p mistral_event_engine
 
 EOT
 )"

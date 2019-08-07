@@ -25,6 +25,12 @@ NOVA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/nov
 
 CEPH_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/ceph.yaml")
 
+# BUG: The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it
+# See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
+OCTAVIA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/octavia.yaml" |
+	PASSPHRASE=$(eq "$(random_password 32)") \
+	envsubst)
+
 HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.yaml" |
 	HOME=/home/tripleo \
 	ENVIRONMENTS=/home/tripleo/overcloud/templates/environments \
@@ -97,20 +103,19 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
  	echo $(c "$NETWORKING_TEMPLATE_J2_YAML") \
  		> "\$TEMPLATES_J2/network/config/lab/role.role.j2.yaml"
 
-	m '[tripleo] Rendering Heat templates and environments from Jinja2'
+	m '[tripleo] Rendering Heat templates and environments via Jinja2'
 
 	"\$TEMPLATES_J2/tools/process-templates.py" \
 		--safe \
-		--base_path "\$TEMPLATES_J2/" \
-		--output-dir "\$TEMPLATES/" \
 		--network-data "\$INFRASTRUCTURE/networks.yaml" \
-		--roles-data "\$INFRASTRUCTURE/roles.yaml"
+		--roles-data "\$INFRASTRUCTURE/roles.yaml" \
+		--base_path "\$TEMPLATES_J2/" \
+		--output-dir "\$TEMPLATES/"
 
 	m '[tripleo] Updating Heat environment for container images'
 
 	# Note: We are using the same container images environment for the undercloud and the overcloud
 	# Note: This file is often created as "containers-prepare-parameter.yaml" in the documentation
-	#cp "\$HOME/undercloud/container-images.yaml" "\$TEMPLATES/environments/"
 
 	python2 <<- _EOT
 		import yaml
@@ -118,7 +123,8 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 		with open("\$HOME/undercloud/container-images.yaml") as f:
 		  y = yaml.load(f)
 
-		# TODO: what is our push_destination?
+		# We just need to remove "push_destination" for overcloud deploy
+		# TODO: can we set this to something?
 		del y["parameter_defaults"]["ContainerImagePrepare"][0]["push_destination"]
 
 		with open("\$TEMPLATES/environments/container-images.yaml", "w") as f:
@@ -140,6 +146,10 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 	m '[tripleo] Updating Heat environment for Ceph'
 	echo $(c "$CEPH_ENVIRONMENT_YAML") \
 		> "\$TEMPLATES/environments/ceph.yaml"
+
+	m '[tripleo] Updating Heat environment for Octavia'
+	echo $(c "$OCTAVIA_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/octavia.yaml"
 
 	m '[tripleo] Updating Heat environment selection'
 	echo $(c "$HEAT_ENVIRONMENTS_YAML") \

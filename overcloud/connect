@@ -36,6 +36,8 @@ if [ -z "$CONTROLLER_IP_ADDRESS" ]; then
 	exit 1
 fi
 
+C_CONTROLLER_IP_ADDRESS=$(c "$CONTROLLER_IP_ADDRESS")
+
 "$ROOT/ssh" manager-root "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
@@ -43,9 +45,14 @@ fi
 	m '[manager-root] Enabling IP route to External network via controller'
 	# This is required for the Manager to access the overcloud, e.g. via the "openstack" command
 
-	# TODO make permanent
 	ip route del 10.0.0.0/24 || true
-	ip route add 10.0.0.0/24 via $(c "$CONTROLLER_IP_ADDRESS")
+	ip route add 10.0.0.0/24 via $C_CONTROLLER_IP_ADDRESS dev public
+
+	# Make permanent
+	cat > /etc/sysconfig/network-scripts/route-public <<- _EOT
+		10.0.0.0/24 via $C_CONTROLLER_IP_ADDRESS dev public
+	_EOT
+	rm --force /etc/sysconfig/network-scripts/route-public.bak
 
 EOT
 )"
@@ -61,7 +68,7 @@ m "[manager] Fetching OpenStack admin access credentials"
 	"$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc" \
 	"manager:/home/manager/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
 
-m "[manager] Enabling dashboard port $OPENSTACK_LOCAL_DASHBOARD_PORT forwarded via ssh \"openstack-dashboard\""
+m "[manager] Enabling local port $OPENSTACK_LOCAL_DASHBOARD_PORT for dashboard forwarded via ssh \"openstack-dashboard\""
 
 . "$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
 

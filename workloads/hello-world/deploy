@@ -7,6 +7,9 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
+HELLO_WORLD_IMAGE=centos7 # can also try "fedora"
+HELLO_WORLD_USERNAME=admin
+
 if [ "$1" == '-c' ]; then
 	"$HERE/clean"
 fi
@@ -27,12 +30,14 @@ m '[openstack] Creating hello-world'
 "$HERE/openstack" \
 stack create hello-world \
 	--template /home/manager/workloads/hello-world.yaml \
+	--parameter "image=$HELLO_WORLD_IMAGE" \
+	--parameter "username=$HELLO_WORLD_USERNAME" \
 	--parameter "timezone=$TIMEZONE" \
 	--wait -v
 
 m '[openstack] Fetching hello-world private key'
 
-KEY=centos@hello-world
+KEY="$HELLO_WORLD_USERNAME@hello-world"
 
 "$HERE/openstack" \
 stack output show hello-world private-key --format value --column output_value \
@@ -45,4 +50,6 @@ stack output show hello-world public-ip --format value --column output_value)
 
 m "[openstack] hello-world server's public IP address: $IP_ADDRESS"
 
-"$ROOT/utils/ensure-ssh-config-proxy" hello-world "$IP_ADDRESS" centos "$KEY" lab-controller-0
+"$ROOT/utils/ensure-ssh-config-proxy" hello-world "$IP_ADDRESS" "$HELLO_WORLD_USERNAME" "$KEY" lab-controller-0
+
+m "To connect: $(c "$ROOT")/ssh hello-world"

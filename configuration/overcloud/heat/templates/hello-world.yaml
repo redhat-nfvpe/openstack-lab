@@ -7,6 +7,16 @@ description: >-
 
 parameters:
 
+  image:
+    type: string
+    label: Server image name
+    default: centos7 # see "common.yaml"
+
+  username:
+    type: string
+    label: Server user name
+    default: admin
+
   public-network:
     type: string
     label: Public network name
@@ -92,9 +102,9 @@ resources:
   server:
     type: OS::Nova::Server
     properties:
-      name: server
+      name: hello-world # will be used as hostname
       flavor: m1.tiny
-      image: centos7
+      image: { get_param: image }
       user_data: { get_resource: server-config }
       user_data_format: RAW
       key_name: { get_resource: keypair }
@@ -106,7 +116,9 @@ resources:
     properties:
       # See: https://cloudinit.readthedocs.io/en/latest/
       cloud_config:
+        user: { get_param: username }
         timezone: { get_param: timezone }
+        # Initialize our "volume-attachment"
         fs_setup:
         - device: /dev/vdb
           filesystem: xfs

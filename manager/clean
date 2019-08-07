@@ -61,6 +61,8 @@ ssh -i "$KEYS_ROOT/root@manager" "root@$MANAGER_OFFICE_IP_ADDRESS" "$(cat <<- EO
 	rm --force /etc/sysconfig/network-scripts/ifcfg-openstack.bak
 	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE
 	rm --force /etc/sysconfig/network-scripts/ifcfg-$C_MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE.bak
+	rm --force /etc/sysconfig/network-scripts/route-public
+	rm --force /etc/sysconfig/network-scripts/route-public.bak
 
 	systemctl start network.service
 

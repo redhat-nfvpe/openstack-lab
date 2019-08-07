@@ -27,3 +27,7 @@ environments:
 - "$ENVIRONMENTS/ceph-ansible/ceph-ansible.yaml"
 - "$ENVIRONMENTS/tuned-ceph-filestore-hci.yaml"
 - "$ENVIRONMENTS/ceph.yaml"
+
+# Octavia (LBaaS)
+# - "$ENVIRONMENTS/services/octavia.yaml"
+# - "$ENVIRONMENTS/octavia.yaml"
