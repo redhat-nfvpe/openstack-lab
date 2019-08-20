@@ -1,0 +1,113 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+# See: https://github.com/openshift/openshift-ansible/tree/release-3.11/playbooks/openstack
+
+"$ROOT/rsync" \
+	--rsync-path='mkdir --parents /home/manager/workloads/okd3/ && rsync' \
+	"$ROOT/configuration/overcloud/heat/templates/okd-tenant.yaml" \
+	"$ROOT/configuration/overcloud/heat/templates/okd.yaml" \
+	manager:/home/manager/workloads/okd3/
+
+m '[openstack] Creating okd-tenant'
+"$ROOT/openstack" \
+stack create okd-tenant \
+	--template /home/manager/workloads/okd3/okd-tenant.yaml \
+	--wait -v
+
+m '[openstack] Creating okd'
+"$HERE/openstack" \
+stack create okd \
+	--template /home/manager/workloads/okd3/okd.yaml \
+	--wait -v
+
+m '[openstack] Fetching okd private key'
+
+"$HERE/openstack" \
+stack output show okd private-key --format value --column output_value \
+	> "$KEYS_ROOT/okd"
+
+chmod 600 "$KEYS_ROOT/okd"
+
+"$ROOT/rsync" \
+	"$KEYS_ROOT/okd" \
+	manager:/home/manager/keys/
+
+"$ROOT/rsync" \
+	--rsync-path='mkdir --parents /home/manager/workloads/okd3/inventory/group_vars/ && rsync' \
+	"$ROOT/configuration/okd3/all.yml" \
+	"$ROOT/configuration/okd3/OSEv3.yml" \
+	manager:/home/manager/workloads/okd3/inventory/group_vars/
+
+"$ROOT/rsync" \
+	"$ROOT/configuration/okd3/ansible.cfg" \
+	manager:/home/manager/workloads/okd3/
+
+# -t for color output in Ansible
+"$ROOT/ssh" -t manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/labrc"
+
+	cat > "\$HOME/workloads/okd3/inventory/local" <<- _EOT
+		[local]
+		#localhost ansible_python_interpreter=python3
+	_EOT
+
+	# Note: The playbooks will try to run the "openstack" command, which we already installed for
+	# Python 3 (they are in ~/.local/bin)
+
+	export PATH="$PATH:\$HOME/.local/bin"
+	export ANSIBLE_CONFIG="\$HOME/workloads/okd3/ansible.cfg"
+	export OPENSHIFT_CLUSTER=okd-cluster
+	export OS_PROJECT_DOMAIN_NAME=okd
+	export OS_PROJECT_NAME=okd
+	export OS_USER_DOMAIN_NAME=okd
+	export OS_USERNAME=okd-admin
+	export OS_PASSWORD=password
+
+# 	m '[manager] Build OKD image'
+# 
+# 	ansible-playbook \
+#  		--user openshift \
+#  		--private-key "\$HOME/keys/okd" \
+# 		--inventory "\$HOME/workloads/okd3/inventory/" \
+# 		"\$HOME/okd/openshift-ansible/playbooks/openstack/openshift-cluster/build_image.yml" \
+# 		-v
+
+	m '[manager] Deploy OKD cluster'
+
+	ansible-playbook \
+		--user openshift \
+		--private-key "\$HOME/keys/okd" \
+		--inventory "\$HOME/workloads/okd3/openshift-ansible/playbooks/openstack/inventory.py" \
+		--inventory "\$HOME/workloads/okd3/inventory/" \
+		"\$HOME/workloads/okd3/openshift-ansible/playbooks/openstack/openshift-cluster/provision_install.yml" \
+		-v
+
+	m '[manager] Fetch "oc" command'
+
+	ansible \
+ 		--user openshift \
+ 		--private-key "\$HOME/keys/okd" \
+ 		--inventory "\$HOME/workloads/okd3/openshift-ansible/playbooks/openstack/inventory.py" \
+ 		--inventory "\$HOME/workloads/okd3/inventory/" \
+		--module-name fetch \
+		--args "flat=true src=/bin/oc dest=\"\$HOME/oc\"" \
+		masters[0]
+
+	chmod +x "\$HOME/oc"
+
+EOT
+)"

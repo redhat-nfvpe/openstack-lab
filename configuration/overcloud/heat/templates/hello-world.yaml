@@ -114,7 +114,7 @@ resources:
   server-config:
     type: OS::Heat::CloudConfig
     properties:
-      # See: https://cloudinit.readthedocs.io/en/latest/
+      # See: https://cloudinit.readthedocs.io/
       cloud_config:
         user: { get_param: username }
         timezone: { get_param: timezone }

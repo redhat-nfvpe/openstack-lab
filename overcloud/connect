@@ -68,6 +68,9 @@ m "[manager] Fetching OpenStack admin access credentials"
 	"$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc" \
 	"manager:/home/manager/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
 
+# TODO: enable multi-domain on dashboard
+# https://www.ibm.com/support/knowledgecenter/en/SS4KMC_2.5.0.9/com.ibm.ico.doc_2.5/enableosdashboard.html
+
 m "[manager] Enabling local port $OPENSTACK_LOCAL_DASHBOARD_PORT for dashboard forwarded via ssh \"openstack-dashboard\""
 
 . "$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"

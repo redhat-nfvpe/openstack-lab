@@ -15,21 +15,21 @@ if [ "$1" == '-c' ]; then
 fi
 
 "$ROOT/rsync" \
-	--rsync-path='mkdir --parents /home/manager/workloads/ && rsync' \
+	--rsync-path='mkdir --parents /home/manager/workloads/hello-world/ && rsync' \
 	"$ROOT/configuration/overcloud/heat/templates/hello-world-tenant.yaml" \
 	"$ROOT/configuration/overcloud/heat/templates/hello-world.yaml" \
-	manager:/home/manager/workloads/
+	manager:/home/manager/workloads/hello-world/
 
 m '[openstack] Creating hello-world-tenant'
 "$ROOT/openstack" \
 stack create hello-world-tenant \
-	--template /home/manager/workloads/hello-world-tenant.yaml \
+	--template /home/manager/workloads/hello-world/hello-world-tenant.yaml \
 	--wait -v
 
 m '[openstack] Creating hello-world'
 "$HERE/openstack" \
 stack create hello-world \
-	--template /home/manager/workloads/hello-world.yaml \
+	--template /home/manager/workloads/hello-world/hello-world.yaml \
 	--parameter "image=$HELLO_WORLD_IMAGE" \
 	--parameter "username=$HELLO_WORLD_USERNAME" \
 	--parameter "timezone=$TIMEZONE" \

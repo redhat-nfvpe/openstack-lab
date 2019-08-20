@@ -1,0 +1,75 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+OKD_VERSION=3.11
+
+# See: https://pypi.org/project/ansible/
+# BUG: Playbooks do *not* work on Ansible 2.6+
+# See: https://github.com/openshift/openshift-ansible/issues/11819
+#ANSIBLE_VERSION=2.8.3
+#ANSIBLE_VERSION=2.6.2
+ANSIBLE_VERSION=2.5.15
+
+# See: https://pypi.org/project/selinux/
+SELINUX_VERSION=0.1.6
+
+# See: https://pypi.org/project/shade/
+SHADE_VERSION=1.31.0
+
+# See: https://pypi.org/project/dnspython/
+DNSPYTHON_VERSION=1.16.0
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	yum install --assumeyes \
+		python-pip libselinux-python
+
+	# CentOS's libselinux-python package is only for Python 2
+	# Also note that it must be installed at system level, not user level
+	pip install --upgrade \
+		selinux==0.1.6
+
+EOT
+)"
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	# BUG: We need to use Python 2 because the playbooks are hardcoded to run the "python" command,
+	# which on CentOS 7 is Python 2
+	# See: https://github.com/openshift/openshift-ansible/issues/11820
+
+	m '[manager] Ensure Ansible is installed'
+	pip install --user --upgrade \
+		ansible==$(c "$ANSIBLE_VERSION") \
+		shade==$(c "$SHADE_VERSION") \
+		dnspython==$(c "$DNSPYTHON_VERSION")
+
+	mkdir --parents "\$HOME/workloads/okd3/"
+
+	m '[manager] Ensure OpenShift Ansible is installed'
+	if [ ! -d "\$HOME/workloads/okd3/openshift-ansible" ]; then
+		git clone https://github.com/openshift/openshift-ansible.git "\$HOME/workloads/okd3/openshift-ansible"
+		pushd "\$HOME/workloads/okd3/openshift-ansible"
+		git checkout "release-$OKD_VERSION" # branch
+		#git checkout "v$OKD_VERSION" # tag
+		popd
+	fi
+
+EOT
+)"
+
+"$HERE/patch"

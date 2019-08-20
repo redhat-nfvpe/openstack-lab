@@ -12,14 +12,14 @@ if [ "$1" == '-c' ]; then
 fi
 
 "$ROOT/rsync" \
-	--rsync-path='mkdir --parents /home/manager/workloads/ && rsync' \
+	--rsync-path='mkdir --parents /home/manager/workloads/common/ && rsync' \
 	"$ROOT/configuration/overcloud/heat/templates/common.yaml" \
-	manager:/home/manager/workloads/
+	manager:/home/manager/workloads/common/
 
 m '[openstack] Creating common'
 "$ROOT/openstack" \
 stack create common \
-	--template /home/manager/workloads/common.yaml \
+	--template /home/manager/workloads/common/common.yaml \
 	--parameter "centos7-image-url=$CENTOS7_IMAGE" \
 	--parameter "fedora-image-url=$FEDORA_IMAGE" \
 	--parameter "fedora-image-version=$FEDORA_IMAGE_VERSION" \

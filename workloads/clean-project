@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Note: "openstack" project purge" only deletes servers.
+# Deleting all resources is much more complicated and must take place in a certain order to
+# avoid errors about dependencies.
+
 DOMAIN=$1
 PROJECT=$2
 USERNAME=$3
@@ -29,7 +33,11 @@ m "[openstack] Cleaning $PROJECT..."
 d 'server'
 d 'volume'
 d 'floating ip'
-d 'loadbalancer'
+
+for ID in $(o loadbalancer list --format value --column id --project "$PROJECT"); do
+	m "[openstack] Deleting loadbalancer $ID"
+	o loadbalancer delete "$ID"
+done
 
 for ID in $(o router list --format value --column ID --project "$PROJECT"); do
 	# Ports have to be removed first

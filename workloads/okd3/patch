@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+ORIGIN_DNS_CONF_J2=$(cat "$ROOT/patches/openshift-ansible/origin-dns.conf.j2")
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager] Patching "openshift-ansible"'
+	echo $(c "$ORIGIN_DNS_CONF_J2") > "\$HOME/workloads/okd3/openshift-ansible/roles/openshift_node/templates/origin-dns.conf.j2"
+
+EOT
+)"

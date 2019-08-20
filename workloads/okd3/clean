@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+m '[openstack] Deleting okd-cluster'
+"$HERE/openstack" \
+stack delete okd-cluster \
+	--wait -v || true
+
+m '[openstack] Deleting okd'
+"$HERE/openstack" \
+stack delete okd \
+	--wait -v || true
+
+"$ROOT/workloads/clean-project" okd okd okd-admin password
+
+m '[openstack] Disabling okd domain'
+# Domain needs to be disabled in order to delete it
+"$ROOT/openstack" \
+domain set okd --disable -v || true
+
+m '[openstack] Deleting okd-tenant'
+"$ROOT/openstack" \
+stack delete okd-tenant \
+	--wait -v || true
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	rm --recursive --force "\$HOME/workloads/okd/cache"
+
+EOT
+)"

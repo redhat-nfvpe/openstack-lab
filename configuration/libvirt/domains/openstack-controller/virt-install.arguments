@@ -14,9 +14,6 @@
 # eth1 is our public network
 --network bridge=public,model=virtio
 
-# eth2 on hypervisor control plane
-#--network bridge=hypervisor,model=virtio
-
 --os-type linux
 --os-variant centos7.0
 --disk "path=$IMAGES/$NAME.qcow2,device=disk,bus=virtio"

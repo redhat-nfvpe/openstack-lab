@@ -98,7 +98,7 @@ resources:
 
   # Provider networks
 
-  # We are using Nuetron's ML2 plugin with OVN, so all "physical_network" names must be mapped
+  # We are using Neutron's ML2 plugin with OVN, so all "physical_network" names must be mapped
   # to OVS bridges by OVN. To see the local mappings:
   #
   #   sudo ovs-vsctl get open . external_ids:ovn-bridge-mappings
@@ -106,7 +106,7 @@ resources:
   # For configuration see "configuration/overcloud/environments/neutron.yaml"
 
   # The "public" network allows access to the outside world
-  # Useful for floating IPs
+  # Also useful for floating IPs
   public-net:
     type: OS::Neutron::ProviderNet
     properties:
