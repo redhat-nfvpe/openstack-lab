@@ -7,17 +7,17 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-m '[openstack] Deleting hello-world'
+m '[openstack] Deleting "hello-world" stack'
 "$HERE/openstack" \
 stack delete hello-world \
 	--wait -v || true
 
-m '[openstack] Disabling hello-world domain'
+m '[openstack] Disabling "hello-world" domain'
 # Domain needs to be disabled in order to delete it
 "$ROOT/openstack" \
 domain set hello-world --disable -v || true
 
-m '[openstack] Deleting hello-world-tenant'
+m '[openstack] Deleting "hello-world-tenant" stack'
 "$ROOT/openstack" \
 stack delete hello-world-tenant \
 	--wait -v || true

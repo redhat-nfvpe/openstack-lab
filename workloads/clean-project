@@ -28,7 +28,7 @@ function d () {
 	done
 }
 
-m "[openstack] Cleaning $PROJECT..."
+m "[openstack] Cleaning project \"$PROJECT\""
 
 d 'server'
 d 'volume'

@@ -7,24 +7,24 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-m '[openstack] Deleting okd-cluster'
+m '[openstack] Deleting "okd-cluster" stack'
 "$HERE/openstack" \
 stack delete okd-cluster \
 	--wait -v || true
 
-m '[openstack] Deleting okd'
+m '[openstack] Deleting "okd" stack'
 "$HERE/openstack" \
 stack delete okd \
 	--wait -v || true
 
 "$ROOT/workloads/clean-project" okd okd okd-admin password
 
-m '[openstack] Disabling okd domain'
+m '[openstack] Disabling "okd" domain'
 # Domain needs to be disabled in order to delete it
 "$ROOT/openstack" \
 domain set okd --disable -v || true
 
-m '[openstack] Deleting okd-tenant'
+m '[openstack] Deleting "okd-tenant" stack'
 "$ROOT/openstack" \
 stack delete okd-tenant \
 	--wait -v || true
@@ -33,7 +33,18 @@ stack delete okd-tenant \
 
 	$SCRIPT_PREAMBLE
 
-	rm --recursive --force "\$HOME/workloads/okd/cache"
+	rm --recursive --force "\$HOME/workloads/okd3/cache"
+
+EOT
+)"
+
+m '[manager-root] Cleaning /etc/hosts'
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	sed --in-place '/^.* console.okd.lab/d' /etc/hosts
 
 EOT
 )"

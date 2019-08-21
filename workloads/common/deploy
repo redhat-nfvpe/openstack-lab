@@ -16,7 +16,7 @@ fi
 	"$ROOT/configuration/overcloud/heat/templates/common.yaml" \
 	manager:/home/manager/workloads/common/
 
-m '[openstack] Creating common'
+m '[openstack] Creating "common" stack'
 "$ROOT/openstack" \
 stack create common \
 	--template /home/manager/workloads/common/common.yaml \

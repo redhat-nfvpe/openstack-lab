@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+. "$ROOT/configuration/okd3/environment"
+
+if [ "$1" == 'stop' ]; then
+
+	# See: https://stackoverflow.com/a/15198031
+	"$ROOT/ssh" \
+		-o ControlMaster=no \
+		-S "$SSH_CONTROL_ROOT/okd-web-console" \
+		-O exit \
+		okd-web-console
+
+else
+
+	"$ROOT/ssh" -fN okd-web-console
+
+	echo "Username: openshift"
+	#echo "Password: anything"
+
+	xdg-open "https://console.okd.lab:8443/console/"
+
+fi

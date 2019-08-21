@@ -1,6 +1,6 @@
 ---
 openshift_openstack_clusterid: "okd"
-openshift_openstack_public_dns_domain: "lab.org"
+openshift_openstack_public_dns_domain: "lab"
 openshift_openstack_fqdn_nodes: false
 openshift_openstack_dns_nameservers: []
 

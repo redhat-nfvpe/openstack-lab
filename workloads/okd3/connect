@@ -1,0 +1,81 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+. "$ROOT/configuration/okd3/environment"
+
+m '[manager-root] Updating /etc/hosts for console.okd.lab'
+
+PUBLIC_API_IP=$("$HERE/openstack" \
+stack output show okd-cluster public_api_ip --format value --column output_value)
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	sed --in-place '/^.* console.okd.lab/d' /etc/hosts
+	echo "$PUBLIC_API_IP console.okd.lab" >> /etc/hosts 
+
+EOT
+)"
+
+# -t for color output in Ansible
+"$ROOT/ssh" -t manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/labrc"
+
+	ROOT="\$HOME/workloads/okd3"
+
+	if [ ! -f "\$ROOT/oc" ]; then
+		m '[manager] Fetching "oc" command'
+
+		PATH="\$PATH:\$HOME/.local/bin" \
+		ANSIBLE_CONFIG="\$ROOT/ansible.cfg" \
+		OPENSHIFT_CLUSTER=okd-cluster \
+		OS_PROJECT_DOMAIN_NAME=okd \
+		OS_PROJECT_NAME=okd \
+		OS_USER_DOMAIN_NAME=okd \
+		OS_USERNAME=okd-admin \
+		OS_PASSWORD=password \
+		ansible \
+	 		--user openshift \
+	 		--private-key "\$HOME/keys/okd" \
+	 		--inventory "\$ROOT/openshift-ansible/playbooks/openstack/inventory.py" \
+	 		--inventory "\$ROOT/inventory/" \
+			--module-name fetch \
+			--args "flat=true src=/bin/oc dest=\"\$ROOT/oc\"" \
+			masters[0]
+	
+		chmod +x "\$ROOT/oc"
+	fi
+
+	m '[manager] Fetching kube config'
+	mkdir --parents "\$HOME/.kube/"
+	scp -i "\$HOME/keys/okd" openshift@console.okd.lab:.kube/config "\$HOME/.kube/" 
+
+EOT
+)"
+
+m '[okd] Logging in as "system:admin"'
+
+"$HERE/oc" \
+login \
+	--username=system:admin \
+	--namespace=default \
+	https://console.okd.lab:8443
+
+m "[manager] Enabling local port 8443 for web console forwarded via ssh \"okd-web-console\""
+
+"$ROOT/utils/ensure-ssh-config-forward" okd-web-console "$MANAGER_OFFICE_IP_ADDRESS" manager manager@manager 8443 console.okd.lab:8443
+
+m '[orchestrator] Updating /etc/hosts for console.okd.lab'
+
+sudo sed --in-place '/^.* console.okd.lab/d' /etc/hosts
+echo "127.0.0.1 console.okd.lab" | sudo tee --append /etc/hosts 

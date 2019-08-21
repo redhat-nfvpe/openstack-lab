@@ -1,0 +1,46 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+. "$HERE/environment"
+
+HOST="$OKD_TEMPLATE-$OKD_PROJECT.apps.okd.lab"
+
+m "[okd] Logging in as \"$OKD_USER\""
+
+"$HERE/../oc" \
+login --username="$OKD_USER" --password=doesntmatter
+
+m "[okd] Creating project \"$OKD_PROJECT\""
+
+"$HERE/../oc" \
+new-project "$OKD_PROJECT"
+
+m "[okd] Deploying \"$OKD_TEMPLATE\""
+
+"$HERE/../oc" \
+new-app --template="$OKD_TEMPLATE"
+
+m "[manager-root] Updating /etc/hosts for $HOST"
+
+PUBLIC_ROUTER_IP=$("$HERE/../openstack" \
+stack output show okd-cluster public_router_ip --format value --column output_value)
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	sed --in-place '/^.* $HOST/d' /etc/hosts
+	echo "$PUBLIC_ROUTER_IP $HOST" >> /etc/hosts 
+
+EOT
+)"

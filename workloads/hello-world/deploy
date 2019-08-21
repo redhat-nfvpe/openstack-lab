@@ -20,13 +20,13 @@ fi
 	"$ROOT/configuration/overcloud/heat/templates/hello-world.yaml" \
 	manager:/home/manager/workloads/hello-world/
 
-m '[openstack] Creating hello-world-tenant'
+m '[openstack] Creating "hello-world-tenant" stack'
 "$ROOT/openstack" \
 stack create hello-world-tenant \
 	--template /home/manager/workloads/hello-world/hello-world-tenant.yaml \
 	--wait -v
 
-m '[openstack] Creating hello-world'
+m '[openstack] Creating "hello-world" stack'
 "$HERE/openstack" \
 stack create hello-world \
 	--template /home/manager/workloads/hello-world/hello-world.yaml \
@@ -35,7 +35,7 @@ stack create hello-world \
 	--parameter "timezone=$TIMEZONE" \
 	--wait -v
 
-m '[openstack] Fetching hello-world private key'
+m '[openstack] Fetching "hello-world" private key'
 
 KEY="$HELLO_WORLD_USERNAME@hello-world"
 
@@ -48,7 +48,7 @@ chmod 600 "$KEYS_ROOT/$KEY"
 IP_ADDRESS=$("$HERE/openstack" \
 stack output show hello-world public-ip --format value --column output_value)
 
-m "[openstack] hello-world server's public IP address: $IP_ADDRESS"
+m "[openstack] \"hello-world\" server's public IP address: $IP_ADDRESS"
 
 "$ROOT/utils/ensure-ssh-config-proxy" hello-world "$IP_ADDRESS" "$HELLO_WORLD_USERNAME" "$KEY" lab-controller-0
 

@@ -5,9 +5,6 @@ HERE=$(dirname "$(readlink -f "$0")")
 ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
-. "$ROOT/utils/trap"
 
-m '[openstack] Deleting "common" stack'
-"$ROOT/openstack" \
-stack delete common \
-	--wait -v || true
+"$ROOT/ssh" manager \
+"\"\$HOME/workloads/okd3/oc\" $(c "$@")"

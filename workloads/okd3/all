@@ -7,7 +7,6 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-m '[openstack] Deleting "common" stack'
-"$ROOT/openstack" \
-stack delete common \
-	--wait -v || true
+"$HERE/prepare" "$1"
+"$HERE/deploy"
+"$HERE/connect"
