@@ -19,6 +19,8 @@ This will create:
 Step 2: Hello World
 -------------------
 
+./ssh hello-world "python -m SimpleHTTPServer 8080"
+
 We have a script to create a "hello world" example:
 
     ./create-simple-project test hello-world

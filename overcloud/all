@@ -7,10 +7,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-if [ "$1" == '-c' ]; then
-	"$HERE/clean"
-fi
-
+"$HERE/prepare" "$1"
 "$HERE/deploy"
 "$HERE/connect"
 "$HERE/deploy-octavia"

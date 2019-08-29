@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == '-c' ]; then
+	"$HERE/clean"
+fi
+
+# Using "-t" to improve wget display
+"$ROOT/ssh" -t tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	AMPHORA_IMAGE="\$HOME/images/amphora.qcow2"
+
+	if [ ! -f "\$AMPHORA_IMAGE" ]; then
+		m "[tripleo] Downloading Amphora image: \"\$AMPHORA_IMAGE\""
+		mkdir --parents "\$(dirname "\$AMPHORA_IMAGE")"
+		wget --output-document="\$AMPHORA_IMAGE" $(c "$AMPHORA_IMAGE_URL")
+	fi
+
+EOT
+)"

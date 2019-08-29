@@ -7,10 +7,6 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap-with-fetch-results"
 
-if [ "$1" == '-c' ]; then
-	"$HERE/clean"
-fi
-
 NETWORKS_YAML=$(cat "$ROOT/configuration/overcloud/networks.yaml")
 
 NETWORKING_ENVIRONMENT_J2_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/networking.j2.yaml")
@@ -28,11 +24,11 @@ CEPH_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/cep
 # BUG: The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it
 # See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
 OCTAVIA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/octavia.yaml" |
+	AMPHORA_IMAGE=/home/tripleo/images/amphora.qcow2 \
 	PASSPHRASE=$(eq "$(random_password 32)") \
 	envsubst)
 
 HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.yaml" |
-	HOME=/home/tripleo \
 	ENVIRONMENTS=/home/tripleo/overcloud/templates/environments \
 	envsubst)
 
@@ -168,3 +164,4 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 
 EOT
 )"
+

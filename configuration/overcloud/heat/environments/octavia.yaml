@@ -11,4 +11,5 @@ parameter_defaults:
   # See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
   OctaviaServerCertsKeyPassphrase: $PASSPHRASE
 
-  #OctaviaAmphoraImageTag:
+  # The Amphora image must be on the TripleO machine
+  OctaviaAmphoraImageFilename: $AMPHORA_IMAGE

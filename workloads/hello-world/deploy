@@ -48,7 +48,11 @@ chmod 600 "$KEYS_ROOT/$KEY"
 IP_ADDRESS=$("$HERE/openstack" \
 stack output show hello-world public-ip --format value --column output_value)
 
+LB_IP_ADDRESS=$("$HERE/openstack" \
+stack output show hello-world public-load-balancer-ip --format value --column output_value)
+
 m "[openstack] \"hello-world\" server's public IP address: $IP_ADDRESS"
+m "[openstack] \"hello-world\" load balancer's URL: http://$LB_IP_ADDRESS/"
 
 "$ROOT/utils/ensure-ssh-config-proxy" hello-world "$IP_ADDRESS" "$HELLO_WORLD_USERNAME" "$KEY" lab-controller-0
 

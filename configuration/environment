@@ -96,6 +96,12 @@ CEPH_RELEASE_SUB_VERSION=4.0.2
 CEPH_CONTAINER_IMAGE_TAG="v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSION-$CEPH_VERSION-centos-7-x86_64"
 
 #
+# Octavia
+#
+
+AMPHORA_IMAGE_URL="https://images.rdoproject.org/octavia/$TRIPLEO_VERSION/amphora-x64-haproxy-centos.qcow2"
+
+#
 # OpenStack
 #
 

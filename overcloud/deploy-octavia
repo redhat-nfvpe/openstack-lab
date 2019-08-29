@@ -10,14 +10,7 @@ ROOT=$(readlink -f "$HERE/..")
 # BUG: We need to deploy Octavia *after* deploying our overcloud
 # See: https://bugzilla.redhat.com/show_bug.cgi?id=1736591
 
-# BUG: The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it
-# See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
-OCTAVIA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/octavia.yaml" |
-	PASSPHRASE=$(eq "$(random_password 32)") \
-	envsubst)
-
 HEAT_ENVIRONMENTS_OCTAVIA_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments-octavia.yaml" |
-	HOME=/home/tripleo \
 	ENVIRONMENTS=/home/tripleo/overcloud/templates/environments \
 	envsubst)
 
@@ -30,10 +23,6 @@ HEAT_ENVIRONMENTS_OCTAVIA_YAML=$(cat "$ROOT/configuration/overcloud/heat-environ
 	OVERCLOUD="\$HOME/overcloud"
 	TEMPLATES="\$OVERCLOUD/templates"
 	INFRASTRUCTURE="\$HOME/infrastructure"
-
-	m '[tripleo] Updating Heat environment for Octavia'
-	echo $(c "$OCTAVIA_ENVIRONMENT_YAML") \
-		> "\$TEMPLATES/environments/octavia.yaml"
 
 	m '[tripleo] Updating Heat environment selection'
 	echo $(c "$HEAT_ENVIRONMENTS_OCTAVIA_YAML") \

@@ -29,67 +29,6 @@ parameters:
 
 resources:
 
-  # Networking
-
-  private-net:
-    type: OS::Neutron::Net
-    properties:
-      name: private
-
-  private-subnet:
-    type: OS::Neutron::Subnet
-    properties:
-      name: private
-      network: { get_resource: private-net }
-      enable_dhcp: true # the default is true
-      ip_version: 4
-      cidr: 192.0.1.0/24
-      gateway_ip: 192.0.1.1 # can be any address not in allocation pools
-      allocation_pools:
-      - start: 192.0.1.2
-        end: 192.0.1.254
-
-  public-router:
-    type: OS::Neutron::Router
-    properties:
-      name: public
-      external_gateway_info:
-        network: { get_param: public-network }
-
-  public-router-interface:
-    type: OS::Neutron::RouterInterface
-    properties:
-      router: { get_resource: public-router }
-      subnet: { get_resource: private-subnet } # will create a port at "gateway_ip" address
-
-  security-group:
-    type: OS::Neutron::SecurityGroup
-    properties:
-      name: control-plane
-      rules:
-      - protocol: icmp
-      - protocol: tcp
-        port_range_min: 22
-        port_range_max: 22
-
-  port:
-    # Exposed as output "private-ip"
-    type: OS::Neutron::Port
-    properties:
-      name: port
-      network: { get_resource: private-net }
-      fixed_ips: # required if we want to bind a floating IP to this port
-      - subnet: { get_resource: private-subnet }
-      security_groups:
-      - { get_resource: security-group }
-
-  public-ip:
-    # Exposed as output "public-ip"
-    type: OS::Neutron::FloatingIP
-    properties:
-      port_id: { get_resource: port } 
-      floating_network: { get_param: public-network }
-
   # Server
 
   keypair:
@@ -145,6 +84,102 @@ resources:
       volume_id: { get_resource: volume }
       instance_uuid: { get_resource: server }
 
+  # Networking
+
+  private-net:
+    type: OS::Neutron::Net
+    properties:
+      name: private
+
+  private-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: private
+      network: { get_resource: private-net }
+      enable_dhcp: true # the default is true
+      ip_version: 4
+      cidr: 192.0.1.0/24
+      gateway_ip: 192.0.1.1 # can be any address not in allocation pools
+      allocation_pools:
+      - start: 192.0.1.2
+        end: 192.0.1.254
+
+  public-router:
+    type: OS::Neutron::Router
+    properties:
+      name: public
+      external_gateway_info:
+        network: { get_param: public-network }
+
+  public-router-interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_resource: public-router }
+      subnet: { get_resource: private-subnet } # will create a port at "gateway_ip" address
+
+  security-group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: control-plane
+      rules:
+      - protocol: icmp
+      - protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      - protocol: tcp
+        port_range_min: 8080
+        port_range_max: 8080
+
+  port:
+    # Exposed as output "private-ip"
+    type: OS::Neutron::Port
+    properties:
+      name: port
+      network: { get_resource: private-net }
+      fixed_ips: # required if we want to bind a floating IP to this port
+      - subnet: { get_resource: private-subnet }
+      security_groups:
+      - { get_resource: security-group }
+
+  public-ip:
+    # Exposed as output "public-ip"
+    type: OS::Neutron::FloatingIP
+    properties:
+      port_id: { get_resource: port } 
+      floating_network: { get_param: public-network }
+
+  # Load balancer
+
+  load-balancer:
+    type: OS::Octavia::LoadBalancer
+    properties:
+      name: load-balancer
+      vip_subnet: { get_param: public-network }
+
+  load-balancer-http-listener:
+    type: OS::Octavia::Listener
+    properties:
+      name: load-balancer-http
+      loadbalancer: { get_resource: load-balancer }
+      protocol: HTTP
+      protocol_port: 80
+
+  load-balancer-http-pool:
+    type: OS::Octavia::Pool
+    properties:
+      name: load-balancer-http
+      listener: { get_resource: load-balancer-http-listener }
+      protocol: HTTP
+      lb_algorithm: ROUND_ROBIN
+
+  load-balancer-http-member:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool: { get_resource: load-balancer-http-pool }
+      address: { get_attr: [ port, fixed_ips, 0, ip_address ] }
+      protocol_port: 8080
+      subnet: { get_resource: private-subnet } # ???
+
 outputs:
 
   private-key:
@@ -158,3 +193,7 @@ outputs:
   public-ip:
     description: Public IP address
     value: { get_attr: [ public-ip, floating_ip_address ] }
+
+  public-load-balancer-ip:
+    description: Public load balancer IP address
+    value: { get_attr: [ load-balancer, vip_address ] }
