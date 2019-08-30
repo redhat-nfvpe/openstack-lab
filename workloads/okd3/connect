@@ -9,6 +9,13 @@ ROOT=$(readlink -f "$HERE/../..")
 
 . "$ROOT/configuration/okd3/environment"
 
+m '[manager] Ensuring ".kube/config" is up to date'
+
+"$HERE/ansible" \
+	--module-name fetch \
+	--args "flat=true src=.kube/config dest=/home/manager/.kube/config" \
+	masters[0]
+
 m '[manager-root] Updating /etc/hosts for console.okd.lab'
 
 PUBLIC_API_IP=$("$HERE/openstack" \
@@ -20,45 +27,6 @@ stack output show okd-cluster public_api_ip --format value --column output_value
 
 	sed --in-place '/^.* console.okd.lab/d' /etc/hosts
 	echo "$PUBLIC_API_IP console.okd.lab" >> /etc/hosts 
-
-EOT
-)"
-
-# -t for color output in Ansible
-"$ROOT/ssh" -t manager "$(cat <<- EOT
-
-	$SCRIPT_PREAMBLE
-
-	. "\$HOME/labrc"
-
-	ROOT="\$HOME/workloads/okd3"
-
-	if [ ! -f "\$ROOT/oc" ]; then
-		m '[manager] Fetching "oc" command'
-
-		PATH="\$PATH:\$HOME/.local/bin" \
-		ANSIBLE_CONFIG="\$ROOT/ansible.cfg" \
-		OPENSHIFT_CLUSTER=okd-cluster \
-		OS_PROJECT_DOMAIN_NAME=okd \
-		OS_PROJECT_NAME=okd \
-		OS_USER_DOMAIN_NAME=okd \
-		OS_USERNAME=okd-admin \
-		OS_PASSWORD=password \
-		ansible \
-	 		--user openshift \
-	 		--private-key "\$HOME/keys/okd" \
-	 		--inventory "\$ROOT/openshift-ansible/playbooks/openstack/inventory.py" \
-	 		--inventory "\$ROOT/inventory/" \
-			--module-name fetch \
-			--args "flat=true src=/bin/oc dest=\"\$ROOT/oc\"" \
-			masters[0]
-	
-		chmod +x "\$ROOT/oc"
-	fi
-
-	m '[manager] Fetching kube config'
-	mkdir --parents "\$HOME/.kube/"
-	scp -i "\$HOME/keys/okd" openshift@console.okd.lab:.kube/config "\$HOME/.kube/" 
 
 EOT
 )"

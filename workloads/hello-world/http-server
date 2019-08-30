@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+# Note: the server port is 8080 while the load balancer is on port 80
+
+m '[hello-world] Starting HTTP server on port 8080, use CTRL-C to exit'
+"$ROOT/ssh" hello-world "python -m SimpleHTTPServer 8080"

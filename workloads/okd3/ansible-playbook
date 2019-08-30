@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+# Using "-t" for color output in Ansible
+"$ROOT/ssh" -t manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	ROOT="\$HOME/workloads/okd3"
+
+	. "\$HOME/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
+
+	# Note: The playbooks may try to run the "openstack" command, which we already installed for
+	# Python 3 (they are in ~/.local/bin)
+
+	PATH="\$PATH:\$HOME/.local/bin" \
+	ANSIBLE_CONFIG="\$ROOT/ansible.cfg" \
+	OPENSHIFT_CLUSTER=okd-cluster \
+	OS_PROJECT_DOMAIN_NAME=okd \
+	OS_PROJECT_NAME=okd \
+	OS_USER_DOMAIN_NAME=okd \
+	OS_USERNAME=okd-admin \
+	OS_PASSWORD=password \
+	ansible-playbook \
+ 		--user openshift \
+ 		--private-key "\$HOME/keys/okd" \
+ 		--inventory "\$ROOT/openshift-ansible/playbooks/openstack/inventory.py" \
+ 		--inventory "\$ROOT/inventory/" \
+ 		$(c "$@")
+
+EOT
+)"

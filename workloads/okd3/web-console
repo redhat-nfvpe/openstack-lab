@@ -22,9 +22,6 @@ else
 
 	"$ROOT/ssh" -fN okd-web-console
 
-	echo "Username: openshift"
-	#echo "Password: anything"
-
 	xdg-open "https://console.okd.lab:8443/console/"
 
 fi

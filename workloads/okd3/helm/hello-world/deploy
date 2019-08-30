@@ -2,7 +2,7 @@
 set -e
 
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../..")
+ROOT=$(readlink -f "$HERE/../../../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
@@ -13,29 +13,31 @@ fi
 
 . "$HERE/environment"
 
-HOST="$OKD_APP_TEMPLATE-$OKD_PROJECT.apps.okd.lab"
+HOST="$OKD_APPLICATION-$OKD_PROJECT.apps.okd.lab"
 
 m "[okd] Logging in as \"$OKD_USER\""
 
 # Note: this will create both the user and an "allow_all:" identity
 # The password does *not matter*, you can subsequently login with *any* password,
 # even on the Web Console
-"$HERE/../oc" \
+"$HERE/../../oc" \
 login --username="$OKD_USER" --password=doesntmatter
 
 m "[okd] Creating project \"$OKD_PROJECT\""
 
-"$HERE/../oc" \
+"$HERE/../../oc" \
 new-project "$OKD_PROJECT"
 
-m "[okd] Deploying \"$OKD_APP_TEMPLATE\" template"
+m "[helm] Deploying chart \"$OKD_HELM_CHART\""
 
-"$HERE/../oc" \
-new-app --template="$OKD_APP_TEMPLATE"
+"$HERE/../helm" \
+install "$OKD_HELM_CHART" \
+	--name-template=hello-world \
+	--namespace="$OKD_PROJECT"
 
 m "[manager-root] Updating /etc/hosts for $HOST"
 
-PUBLIC_ROUTER_IP=$("$HERE/../openstack" \
+PUBLIC_ROUTER_IP=$("$HERE/../../openstack" \
 stack output show okd-cluster public_router_ip --format value --column output_value)
 
 "$ROOT/ssh" manager-root "$(cat <<- EOT

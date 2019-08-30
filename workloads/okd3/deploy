@@ -53,40 +53,30 @@ chmod 600 "$KEYS_ROOT/okd"
 	"$ROOT/configuration/okd3/ansible.cfg" \
 	manager:/home/manager/workloads/okd3/
 
-# -t for color output in Ansible
+# Using "-t" for color output in Ansible
 "$ROOT/ssh" -t manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
-
-	. "\$HOME/labrc"
 
 	cat > "\$HOME/workloads/okd3/inventory/local" <<- _EOT
 		[local]
 		#localhost ansible_python_interpreter=python3
 	_EOT
 
-	# Note: The playbooks will try to run the "openstack" command, which we already installed for
-	# Python 3 (they are in ~/.local/bin)
-
-	m '[manager] Deploying OKD cluster'
-
-	ROOT="\$HOME/workloads/okd3"
-
-	PATH="\$PATH:\$HOME/.local/bin" \
-	ANSIBLE_CONFIG="\$ROOT/ansible.cfg" \
-	OPENSHIFT_CLUSTER=okd-cluster \
-	OS_PROJECT_DOMAIN_NAME=okd \
-	OS_PROJECT_NAME=okd \
-	OS_USER_DOMAIN_NAME=okd \
-	OS_USERNAME=okd-admin \
-	OS_PASSWORD=password \
-	ansible-playbook \
-		--user openshift \
-		--private-key "\$HOME/keys/okd" \
-		--inventory "\$ROOT/openshift-ansible/playbooks/openstack/inventory.py" \
-		--inventory "\$ROOT/inventory/" \
-		"\$ROOT/openshift-ansible/playbooks/openstack/openshift-cluster/provision_install.yml" \
-		-v
-
 EOT
 )"
+
+m '[manager] Deploying OKD cluster'
+
+"$HERE/ansible-playbook" \
+	/home/manager/workloads/okd3/openshift-ansible/playbooks/openstack/openshift-cluster/provision_install.yml \
+	-v
+
+m '[manager] Ensuring "oc" is installed'
+
+"$HERE/ansible" \
+	--module-name fetch \
+	--args "flat=true src=/bin/oc dest=/home/manager/workloads/okd3/oc" \
+	masters[0]
+
+"$ROOT/ssh" manager "chmod +x \"\$HOME/workloads/okd3/oc\""

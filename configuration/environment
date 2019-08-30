@@ -99,6 +99,8 @@ CEPH_CONTAINER_IMAGE_TAG="v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSIO
 # Octavia
 #
 
+# Unfortunately older Amphora image builds are deleted from the RDO repository, so we cannot lock a
+# specific version here. This means that you might get different behavior each time you deploy RDO. 
 AMPHORA_IMAGE_URL="https://images.rdoproject.org/octavia/$TRIPLEO_VERSION/amphora-x64-haproxy-centos.qcow2"
 
 #

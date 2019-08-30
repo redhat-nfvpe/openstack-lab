@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+# Note: the server port is 8080 while the load balancer is on port 80
+
+IP_ADDRESS=$("$HERE/openstack" \
+stack output show hello-world public-load-balancer-ip --format value --column output_value)
+
+"$ROOT/ssh" manager "curl $(c $IP_ADDRESS)"

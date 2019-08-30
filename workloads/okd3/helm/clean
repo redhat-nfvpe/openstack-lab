@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+m '[okd] Logging in as "system:admin"'
+
+"$HERE/../oc" \
+login --username=system:admin --namespace=default
+
+m '[okd] Deleting deployment "tiller-deploy" from "kube-system"'
+
+"$HERE/../oc" \
+delete deployment tiller-deploy \
+	--namespace=kube-system || true

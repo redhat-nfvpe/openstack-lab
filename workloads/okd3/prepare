@@ -28,6 +28,7 @@ fi
 EOT
 )"
 
+# Using "-t" to improve wget display
 "$ROOT/ssh" manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
@@ -36,7 +37,7 @@ EOT
 	# which on CentOS 7 is Python 2
 	# See: https://github.com/openshift/openshift-ansible/issues/11820
 
-	m '[manager] Ensure Ansible is installed'
+	m '[manager] Ensuring Ansible is installed'
 	pip install --user --upgrade \
 		ansible==$(c "$ANSIBLE_VERSION") \
 		shade==$(c "$SHADE_VERSION") \
@@ -46,7 +47,7 @@ EOT
 
 	mkdir --parents "\$ROOT/"
 
-	m '[manager] Ensure OpenShift Ansible is installed'
+	m '[manager] Ensuring OpenShift Ansible is installed'
 	if [ ! -d "\$ROOT/openshift-ansible" ]; then
 		git clone https://github.com/openshift/openshift-ansible.git "\$ROOT/openshift-ansible"
 		pushd "\$ROOT/openshift-ansible"
@@ -54,6 +55,23 @@ EOT
 		#git checkout "v$OKD_VERSION" # tag
 		popd
 	fi
+
+	m '[manager] Ensuring "kubectl" is installed'
+	if [ ! -f "\$ROOT/kubectl" ]; then
+	 	wget \
+	 		--output-document="\$ROOT/kubectl" \
+	 		"https://storage.googleapis.com/kubernetes-release/release/v$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+
+		chmod +x "\$ROOT/kubectl"
+	fi
+
+	m '[manager] Updating PATH in ".bashrc"'
+	sed --in-place "/# OKD3 START/,/# OKD3 END/d" "\$HOME/.bashrc"
+	cat >> "\$HOME/.bashrc" <<- _EOT
+		# OKD3 START
+		PATH="\\\$PATH:\$ROOT"
+		# OKD3 END
+	_EOT
 
 EOT
 )"

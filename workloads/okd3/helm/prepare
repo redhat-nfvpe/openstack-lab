@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+. "$ROOT/configuration/okd3/environment"
+
+# Using "-t" to improve wget display
+"$ROOT/ssh" -t manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	ROOT="\$HOME/workloads/okd3"
+
+	m '[manager] Ensuring "helm" is installed'
+
+	ARCHIVE=\$(mktemp --suffix=.tar.gz)
+
+ 	wget \
+ 		--output-document="\$ARCHIVE" \
+ 		"https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz"
+
+	tar xf "\$ARCHIVE" -C "\$ROOT/" linux-amd64/helm --strip 1 
+
+	rm "\$ARCHIVE"
+
+	m '[helm] Initializing Helm'
+
+	"\$ROOT/helm" init
+
+EOT
+)"

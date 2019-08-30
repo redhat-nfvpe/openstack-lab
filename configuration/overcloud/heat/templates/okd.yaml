@@ -11,8 +11,29 @@ resources:
     # Exposed as output "private-key"
     type: OS::Nova::KeyPair
     properties:
-      name: openshift
+      name: okd
       save_private_key: true
+
+  # Flavors
+  # See: https://docs.okd.io/3.11/install_config/configuring_openstack.html#sys_req_ocp
+
+  okd.default:
+    type: OS::Nova::Flavor
+    properties:
+      name: okd.default
+      is_public: false
+      vcpus: 4
+      ram: 8192 # 16384 # MB
+      disk: 45 # GB
+
+  okd.node:
+    type: OS::Nova::Flavor
+    properties:
+      name: okd.node
+      is_public: false
+      vcpus: 4
+      ram: 8192 # 65536 # MB
+      disk: 20 # GB
 
 outputs:
 

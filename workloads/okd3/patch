@@ -13,7 +13,7 @@ ORIGIN_DNS_CONF_J2=$(cat "$ROOT/patches/openshift-ansible/origin-dns.conf.j2")
 
 	$SCRIPT_PREAMBLE
 
-	m '[manager] Patching "openshift-ansible"'
+	m '[manager] Patching OpenShift Ansible'
 	echo $(c "$ORIGIN_DNS_CONF_J2") > "\$HOME/workloads/okd3/openshift-ansible/roles/openshift_node/templates/origin-dns.conf.j2"
 
 EOT
