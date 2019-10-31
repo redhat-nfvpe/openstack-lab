@@ -7,21 +7,26 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap-with-fetch-results"
 
-if [ "$1" == '-c' ]; then
+if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
-"$HERE/patch"
+# Not needed anymore?
+if [ "$TRIPLEO_PATCH" == true ]; then
+	"$HERE/patch"
+fi
 
-EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
-EQ_CEPH_VERSION=$(eq "$CEPH_VERSION")
+EQ_OPENSTACK_VERSION_NAME=$(eq "$OPENSTACK_VERSION_NAME")
+EQ_CEPH_VERSION=$(eq "$CEPH_VERSION_NAME")
+
+echo $EQ_CEPH_VERSION
 
 # Using "-t" to improve wget display
 "$ROOT/ssh" -t tripleo "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
 
-	BASE_IMAGE_NAME="\$HOME/images/centos7.qcow2"
+	BASE_IMAGE_NAME=\$HOME/images/centos7.qcow2
 
 	if [ ! -f "\$BASE_IMAGE_NAME" ]; then
 		m "[tripleo] Downloading base image: \"\$BASE_IMAGE_NAME\""
@@ -36,11 +41,15 @@ EQ_CEPH_VERSION=$(eq "$CEPH_VERSION")
 
 	# Default configs are in: /usr/share/openstack-tripleo-common/image-yaml/
 
-	DIB_YUM_REPO_CONF="/etc/yum.repos.d/delorean.repo /etc/yum.repos.d/delorean-$EQ_TRIPLEO_VERSION-testing.repo /etc/yum.repos.d/tripleo-centos-ceph-$EQ_CEPH_VERSION.repo" \
-	DIB_LOCAL_IMAGE="\$BASE_IMAGE_NAME" \
-	DIB_INSTALLTYPE_ironic_agent=source \
-	DIB_REPOTYPE_ironic_agent=git \
-	DIB_REPOLOCATION_ironic_agent="\$HOME/source/ironic-python-agent" \
+	if [ $(c "$TRIPLEO_PATCH") == true ]; then
+		# Use patch
+		export DIB_INSTALLTYPE_ironic_agent=source
+		export DIB_REPOTYPE_ironic_agent=git
+		export DIB_REPOLOCATION_ironic_agent="\$HOME/source/ironic-python-agent"
+	fi
+
+	DIB_YUM_REPO_CONF="/etc/yum.repos.d/delorean.repo /etc/yum.repos.d/delorean-$EQ_OPENSTACK_VERSION_NAME-testing.repo /etc/yum.repos.d/tripleo-centos-ceph-$EQ_CEPH_VERSION.repo" \
+	DIB_LOCAL_IMAGE=\$BASE_IMAGE_NAME \
 	openstack \
 	overcloud image build \
 		--output-directory "\$HOME/images/" \

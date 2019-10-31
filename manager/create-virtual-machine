@@ -25,10 +25,10 @@ while IFS= read -r LINE; do
 	V=${LINE#*=}
 
 	# See: https://stackoverflow.com/a/35208546
-	if [ "$V" == 'cloud-init' ]; then
+	if [ "$V" == cloud-init ]; then
 		CLOUD_INIT=true
 		echo '' | "$HERE/create-virtual-machine-cloud-init-image" "$IMAGE_NAME" "$NAME" "$USERNAME"
-	elif [ "${V:0:5}" == 'base,' ]; then
+	elif [ "${V:0:5}" == base, ]; then
 		echo '' | "$HERE/create-virtual-machine-image-from-base" "$IMAGE_NAME" "${V:5}"
 	else
 		echo '' | "$HERE/create-virtual-machine-image" "$IMAGE_NAME" "$V"
@@ -40,7 +40,7 @@ VIRT_INSTALL_ARGUMENTS=$(command_line_ini "$ROOT/configuration/libvirt/domains/$
 	NAME=$EQ_NAME \
 	envsubst)
 
-if [ "$CLOUD_INIT" == 'true' ]; then
+if [ "$CLOUD_INIT" == true ]; then
 	m "[manager] Ensuring keypair for virtual machine \"$NAME\" installed"
 	
 	"$ROOT/rsync" \
@@ -72,7 +72,7 @@ fi
 	m "[manager-root] Ensuring virtual machine \"$EQ_NAME\" will autostart"
 	virsh autostart --domain $C_NAME
 
-	if [ "$CLOUD_INIT" == 'true' ]; then
+	if [ "$CLOUD_INIT" == true ]; then
 		m "[manager-root] Ejecting cloud-init configuration disk from virtual machine \"$EQ_NAME\""
 		virsh change-media $C_NAME hda --eject --config || true
 	fi

@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-if [ "$1" == '-c' ]; then
+if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
@@ -16,7 +16,7 @@ fi
 
 	$SCRIPT_PREAMBLE
 
-	AMPHORA_IMAGE="\$HOME/images/amphora.qcow2"
+	AMPHORA_IMAGE=\$HOME/images/amphora.qcow2
 
 	if [ ! -f "\$AMPHORA_IMAGE" ]; then
 		m "[tripleo] Downloading Amphora image: \"\$AMPHORA_IMAGE\""

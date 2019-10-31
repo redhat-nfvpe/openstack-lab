@@ -1,4 +1,4 @@
-# See: https://docs.openstack.org/heat/stein/template_guide/
+# See: https://docs.openstack.org/heat/train/template_guide/
 
 heat_template_version: 2018-08-31
 

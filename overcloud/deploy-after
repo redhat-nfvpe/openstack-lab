@@ -1,0 +1,59 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+# BUG: We need to deploy Octavia separately *after* deploying our overcloud
+# See: https://bugzilla.redhat.com/show_bug.cgi?id=1736591
+
+# BUG: The default "OctaviaGenerateCerts: true" will generate a length of 25, so we must override it
+# See: https://bugzilla.redhat.com/show_bug.cgi?id=1723051
+OCTAVIA_ENVIRONMENT_YAML=$(cat "$ROOT/configuration/overcloud/heat/environments/octavia.yaml" |
+	AMPHORA_IMAGE=/home/tripleo/images/amphora.qcow2 \
+	PASSPHRASE=$(eq "$(random_password 32)") \
+	envsubst)
+
+HEAT_ENVIRONMENTS_AFTER_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments-after.yaml" |
+	ENVIRONMENTS=/home/tripleo/overcloud/templates/environments \
+	envsubst)
+
+# See: https://bugs.launchpad.net/tripleo/+bug/1838039/comments/20
+OCTAVIA_DEPLOYMENT_CONFIG_J2_YAML=$(cat "$ROOT/patches/openstack-tripleo-heat-templates/octavia-deployment-config.j2.yaml")
+
+"$ROOT/ssh" tripleo "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	. "\$HOME/stackrc"
+
+	OVERCLOUD=\$HOME/overcloud
+	TEMPLATES=\$OVERCLOUD/templates
+	INFRASTRUCTURE=\$HOME/infrastructure
+
+ 	m '[tripleo] Patching "openstack-tripleo-heat-templates"'
+ 	echo $(c "$OCTAVIA_DEPLOYMENT_CONFIG_J2_YAML") > overcloud/templates.j2/deployment/octavia/octavia-deployment-config.j2.yaml
+
+	m '[tripleo] Updating Heat environment for Octavia'
+	echo $(c "$OCTAVIA_ENVIRONMENT_YAML") \
+		> "\$TEMPLATES/environments/octavia.yaml"
+
+	m '[tripleo] Updating Heat environment selection'
+	echo $(c "$HEAT_ENVIRONMENTS_AFTER_YAML") \
+		> "\$OVERCLOUD/heat-environments-after.yaml"
+
+	m '[tripleo] Deploying Octavia'
+	openstack \
+	overcloud deploy \
+		--stack $(c "$OPENSTACK_NAME") \
+		--templates "\$TEMPLATES/" \
+		--networks-file "\$INFRASTRUCTURE/networks.yaml" \
+		--roles-file "\$INFRASTRUCTURE/roles.yaml" \
+		--answers-file "\$OVERCLOUD/heat-environments-after.yaml" \
+		$(c "$TRIPLEO_VERBOSITY")
+
+EOT
+)"

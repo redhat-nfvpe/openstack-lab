@@ -88,7 +88,7 @@ ssh -i "$KEYS_ROOT/root@manager" "root@$MANAGER_OFFICE_IP_ADDRESS" "$(cat <<- EO
 
 	m '[manager-root] Ensuring no user "manager"...'
 
-		if id -u manager > /dev/null; then
+	if id -u manager > /dev/null; then
 		userdel --force --remove manager
 	fi
 

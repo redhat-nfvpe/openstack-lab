@@ -8,7 +8,7 @@ ROOT=$HERE
 
 echo "Fetching results to $(q "$WORKSPACE_ROOT")"
 
-if [ "$1" == '-c' ]; then
+if [ "$1" == -c ]; then
 	rm --recursive --force \
 		"$WORKSPACE_ROOT/configuration/" \
 		"$WORKSPACE_ROOT/logs/"
@@ -30,6 +30,9 @@ function r () {
 }
 
 function configuration () {
+	if ! "$ROOT/utils/has-ssh-config" "$1"; then
+		return
+	fi
 	r \
 		--include=*/ \
 		--include=*.sh \
@@ -38,7 +41,6 @@ function configuration () {
 		--include=*.yaml \
 		--include=*.json \
 		--exclude=* \
-		"$1:/home/manager/" \
 		"$1:/home/tripleo/" \
 		"$1:/var/lib/config-data/puppet-generated/" \
 		"$1:/var/lib/heat-config" \
@@ -49,13 +51,16 @@ function configuration () {
 }
 
 function logs () {
+	if ! "$ROOT/utils/has-ssh-config" "$1"; then
+		return
+	fi
 	r \
 		--include=*/ \
 		--exclude=lab-config.tar.gz \
 		--include=*.log \
+		--include=*.log.* \
 		--include=*.tar.gz \
 		--exclude=* \
-		"$1:/home/manager/" \
 		"$1:/home/tripleo/" \
 		"$1:/var/log/libvirt/qemu" \
 		"$1:/var/log/virtualbmc" \

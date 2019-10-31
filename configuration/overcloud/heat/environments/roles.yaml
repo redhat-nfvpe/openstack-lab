@@ -30,7 +30,7 @@
 #
 # See:
 #   https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/profile_matching.html
-#   https://docs.openstack.org/heat/stein/template_guide/environment.html
+#   https://docs.openstack.org/heat/train/template_guide/environment.html
 
 parameter_defaults:
 

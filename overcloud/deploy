@@ -38,10 +38,10 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 
 	. "\$HOME/stackrc"
 
-	OVERCLOUD="\$HOME/overcloud"
-	TEMPLATES="\$OVERCLOUD/templates"
-	TEMPLATES_J2="\$OVERCLOUD/templates.j2"
-	INFRASTRUCTURE="\$HOME/infrastructure"
+	OVERCLOUD=\$HOME/overcloud
+	TEMPLATES=\$OVERCLOUD/templates
+	TEMPLATES_J2=\$OVERCLOUD/templates.j2
+	INFRASTRUCTURE=\$HOME/infrastructure
 	rm --recursive --force "\$OVERCLOUD/"
 	mkdir --parents "\$TEMPLATES/"
 	mkdir --parents "\$TEMPLATES_J2/"
@@ -155,7 +155,7 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 	# The stack name will be used as a prefix for server names and for the "rc" file (e.g. "labrc")
 	openstack \
 	overcloud deploy \
-		--stack $(c "$TRIPLEO_OVERCLOUD_HEAT_STACK") \
+		--stack $(c "$OPENSTACK_NAME") \
 		--templates "\$TEMPLATES/" \
 		--networks-file "\$INFRASTRUCTURE/networks.yaml" \
 		--roles-file "\$INFRASTRUCTURE/roles.yaml" \
@@ -164,4 +164,3 @@ HEAT_ENVIRONMENTS_YAML=$(cat "$ROOT/configuration/overcloud/heat-environments.ya
 
 EOT
 )"
-

@@ -8,7 +8,7 @@
 # Many of these values will be set in
 # "/var/lib/config-data/neutron/etc/neutron/plugins/ml2/ml2_conf.ini".
 #
-# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+# See: https://docs.openstack.org/heat/train/template_guide/environment.html
 
 parameter_defaults:
 
@@ -27,7 +27,7 @@ parameter_defaults:
   # Defaults to "qos,port_security"
   NeutronPluginExtensions: qos,port_security,dns_domain_ports
 
-  # Internal DNS: https://docs.openstack.org/neutron/stein/admin/config-dns-int.html
+  # Internal DNS: https://docs.openstack.org/neutron/train/admin/config-dns-int.html
 
   # "dns_domain" in "neutron.conf"
   # Defaults to "openstacklocal"

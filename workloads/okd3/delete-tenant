@@ -1,33 +1,33 @@
 #!/bin/bash
 set -e
 
+OKD_USER=$1
+OKD_PROJECT=$2
+
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../../..")
+ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
-. "$ROOT/utils/trap"
-
-. "$HERE/environment"
 
 m "[okd] Logging in as \"$OKD_USER\""
 
-"$HERE/../../oc" \
+"$HERE/oc" \
 login --username="$OKD_USER" --password=doesntmatter
 
 m "[okd] Deleting project \"$OKD_PROJECT\""
 
-"$HERE/../../oc" \
+"$HERE/oc" \
 delete project "$OKD_PROJECT" --wait=true || true
 
 m '[okd] Logging in as "system:admin"'
 
-"$HERE/../../oc" \
+"$HERE/oc" \
 login --username=system:admin --namespace=default
 
 m "[okd] Deleting user \"$OKD_USER\""
 
-"$HERE/../../oc" \
-delete user "$OKD_USER" --wait=true 
+"$HERE/oc" \
+delete user "$OKD_USER" --wait=true
 
-"$HERE/../../oc" \
-delete identity "allow_all:$OKD_USER" --wait=true 
+"$HERE/oc" \
+delete identity "allow_all:$OKD_USER" --wait=true

@@ -7,7 +7,11 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap-with-fetch-results"
 
-EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
+if [ "$1" == -c ]; then
+	"$HERE/clean"
+fi
+
+EQ_TRIPLEO_VERSION=$(eq "$OPENSTACK_VERSION_NAME")
 
 "$ROOT/manager/create-virtual-machine" tripleo tripleo
 "$ROOT/manager/enable-virtual-machine-control-plane" tripleo eth0 tripleo
@@ -35,7 +39,7 @@ EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
 		# to scrape the repository's generated HTML index using Lynx in order to find the current
 		# URL.
 	
-		TRIPLEO_REPOS=\$(lynx -listonly -nonumbers -dump  "https://trunk.rdoproject.org/centos7-$EQ_TRIPLEO_VERSION/consistent/" |
+		TRIPLEO_REPOS=\$(lynx -listonly -nonumbers -dump "https://trunk.rdoproject.org/centos7-$EQ_TRIPLEO_VERSION/consistent/" |
 			grep '/python2-tripleo-repos-.*\.rpm$')
 
 		sudo yum install --assumeyes \
@@ -47,7 +51,7 @@ EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
 	m '[tripleo] Ensuring TripleO-client packages are installed (~ 5 minutes)'
 
 	sudo --preserve-env tripleo-repos \
-		-b $(c "$TRIPLEO_VERSION") \
+		-b $(c "$OPENSTACK_VERSION_NAME") \
 		-d centos7 \
 		current ceph
 
@@ -65,7 +69,7 @@ EQ_TRIPLEO_VERSION=$(eq "$TRIPLEO_VERSION")
 	sed --in-place "/# OpenStack START/,/# OpenStack END/d" "\$HOME/.bashrc"
 	cat >> "\$HOME/.bashrc" <<- _EOT
 		# OpenStack START
-		# For Cliff see: https://docs.openstack.org/cliff/stein/
+		# For Cliff see: https://docs.openstack.org/cliff/train/
 		function openstack_cliff () {
 		  export CLIFF_MAX_TERM_WIDTH=\\\$(tput cols)
 		}

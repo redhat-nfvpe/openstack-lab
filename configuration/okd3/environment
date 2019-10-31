@@ -8,18 +8,18 @@ OKD_VERSION=3.11
 ANSIBLE_VERSION=2.5.15
 
 # See: https://pypi.org/project/selinux/
-SELINUX_VERSION=0.1.6
+SELINUX_VERSION=0.2.0
 
 # See: https://pypi.org/project/shade/
-SHADE_VERSION=1.31.0
+SHADE_VERSION=1.32.0
 
 # See: https://pypi.org/project/dnspython/
 DNSPYTHON_VERSION=1.16.0
 
 # See: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 #      curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt
-KUBECTL_VERSION=1.13.0
+KUBECTL_VERSION=1.16.2
 
 # See: https://github.com/helm/helm/releases
-HELM_VERSION=3.0.0-beta.2
+HELM_VERSION=3.0.0-rc.1
 #HELM_VERSION=2.14.3

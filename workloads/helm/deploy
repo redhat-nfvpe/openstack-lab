@@ -2,7 +2,7 @@
 set -e
 
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../..")
+ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
@@ -14,7 +14,7 @@ ROOT=$(readlink -f "$HERE/../../..")
 
 	$SCRIPT_PREAMBLE
 
-	ROOT="\$HOME/workloads/okd3"
+	ROOT=\$HOME/workloads/okd3
 
 	m '[manager] Ensuring "helm" is installed'
 

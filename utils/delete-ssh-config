@@ -8,7 +8,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 
-CONFIG="$WORKSPACE_ROOT/ssh.config"
+CONFIG=$WORKSPACE_ROOT/ssh.config
 
 if [ -f "$CONFIG" ]; then
 	sed --in-place "/Host \"$NAME\"/,/^$/d" "$CONFIG"

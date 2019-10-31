@@ -1,0 +1,6 @@
+ONAP_VERSION=4.0.0-ONAP
+
+# See: https://github.com/helm/chartmuseum/releases
+CHARTMUSEUM_VERSION=0.9.0
+
+CHARTMUSEUM_PORT=8879

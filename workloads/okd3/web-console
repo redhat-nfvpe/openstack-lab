@@ -9,7 +9,7 @@ ROOT=$(readlink -f "$HERE/../..")
 
 . "$ROOT/configuration/okd3/environment"
 
-if [ "$1" == 'stop' ]; then
+if [ "$1" == stop ]; then
 
 	# See: https://stackoverflow.com/a/15198031
 	"$ROOT/ssh" \
@@ -22,6 +22,6 @@ else
 
 	"$ROOT/ssh" -fN okd-web-console
 
-	xdg-open "https://console.okd.lab:8443/console/"
+	xdg-open https://console.okd.lab:8443/console/
 
 fi

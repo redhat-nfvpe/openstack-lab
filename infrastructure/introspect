@@ -31,7 +31,7 @@ NODES_YAML=$(cat "$ROOT/configuration/overcloud/nodes.yaml" |
 
 	. "\$HOME/stackrc"
 
-	INFRASTRUCTURE="\$HOME/infrastructure"
+	INFRASTRUCTURE=\$HOME/infrastructure
 	mkdir --parents "\$INFRASTRUCTURE/"
 
 	m '[tripleo] Updating inventory of infrastructure nodes'

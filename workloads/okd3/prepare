@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-if [ "$1" == '-c' ]; then
+if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
@@ -43,17 +43,14 @@ EOT
 		shade==$(c "$SHADE_VERSION") \
 		dnspython==$(c "$DNSPYTHON_VERSION")
 
-	ROOT="\$HOME/workloads/okd3"
+	ROOT=\$HOME/workloads/okd3
 
 	mkdir --parents "\$ROOT/"
 
 	m '[manager] Ensuring OpenShift Ansible is installed'
 	if [ ! -d "\$ROOT/openshift-ansible" ]; then
-		git clone https://github.com/openshift/openshift-ansible.git "\$ROOT/openshift-ansible"
-		pushd "\$ROOT/openshift-ansible"
-		git checkout "release-$OKD_VERSION" # branch
-		#git checkout "v$OKD_VERSION" # tag
-		popd
+		git clone --branch="release-$OKD_VERSION" https://github.com/openshift/openshift-ansible.git "\$ROOT/openshift-ansible"
+		#tag = "v$OKD_VERSION" # tag
 	fi
 
 	m '[manager] Ensuring "kubectl" is installed'

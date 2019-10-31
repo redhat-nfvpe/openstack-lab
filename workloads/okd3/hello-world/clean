@@ -9,30 +9,9 @@ ROOT=$(readlink -f "$HERE/../../..")
 
 . "$HERE/environment"
 
-HOST="$OKD_APP_TEMPLATE-$OKD_PROJECT.apps.okd.lab"
+"$HERE/../delete-tenant" "$OKD_USER" "$OKD_PROJECT"
 
-m "[okd] Logging in as \"$OKD_USER\""
-
-"$HERE/../oc" \
-login --username="$OKD_USER" --password=doesntmatter
-
-m "[okd] Deleting project \"$OKD_PROJECT\""
-
-"$HERE/../oc" \
-delete project "$OKD_PROJECT" --wait=true || true
-
-m '[okd] Logging in as "system:admin"'
-
-"$HERE/../oc" \
-login --username=system:admin --namespace=default
-
-m "[okd] Deleting user \"$OKD_USER\""
-
-"$HERE/../oc" \
-delete user "$OKD_USER" --wait=true
-
-"$HERE/../oc" \
-delete identity "allow_all:$OKD_USER" --wait=true
+HOST=$OKD_APP_TEMPLATE-$OKD_PROJECT.apps.okd.lab
 
 m '[manager-root] Cleaning /etc/hosts'
 

@@ -4,4 +4,4 @@ set -e
 HERE=$(dirname "$(readlink -f "$0")")
 . "$HERE/utils/functions"
 
-rsync --rsh="\"$HERE/ssh\"" "$@"
+rsync --rsh=$(c "$HERE")/ssh "$@"

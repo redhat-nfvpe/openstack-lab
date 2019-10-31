@@ -10,7 +10,7 @@ ROOT=$(readlink -f "$HERE/..")
 m '[tripleo] Deleting overcloud (~ 10 minutes)'
 
 "$ROOT/undercloud/openstack" \
-overcloud delete "$TRIPLEO_OVERCLOUD_HEAT_STACK" \
+overcloud delete "$OPENSTACK_NAME" \
 	--yes
 
 m '[tripleo] Cleaning nodes'

@@ -34,13 +34,6 @@ parameters:
     description: Mapping of service endpoint -> protocol. Typically set
                  via parameter_defaults in the resource registry.
     type: json
-  StackAction:
-    type: string
-    description: >
-      Heat action on performed top-level stack.  Note StackUpdateType is
-      set to UPGRADE when a major-version upgrade is in progress.
-    constraints:
-    - allowed_values: ['CREATE', 'UPDATE']
   OctaviaPostWorkflowName:
     description: Mistral workflow name for octavia configuration steps
                  once the overcloud is ready.
@@ -194,15 +187,6 @@ conditions:
       - raw
     - get_param: NovaEnableRbdBackend
 
-# PATCH: see https://bugs.launchpad.net/tripleo/+bug/1838039/comments/20
-  generate_certs: { get_param: OctaviaGenerateCerts }
-#  generate_certs:
-#      and:
-#      - get_param: OctaviaGenerateCerts
-#      - equals:
-#        - get_param: StackAction
-#        - CREATE
-
 resources:
 {% if not octavia_standalone %}
   default_key_pair:
@@ -242,14 +226,14 @@ resources:
           server_certs_key_passphrase: {get_param: OctaviaServerCertsKeyPassphrase}
           ca_passphrase: { get_param: OctaviaCaKeyPassphrase }
           client_cert_path: { get_param: OctaviaClientCertFile }
-          generate_certs: {if: [generate_certs, true, false]}
+          generate_certs: { get_param: OctaviaGenerateCerts }
           mgmt_port_dev: { get_param: OctaviaMgmtPortDevName }
           os_password: { get_param: AdminPassword }
           os_project_name: 'admin'
           os_username: 'admin'
           octavia_ansible_playbook: '/usr/share/tripleo-common/playbooks/octavia-files.yaml'
           os_auth_url: { get_param: [EndpointMap, KeystoneV3Public, uri] }
-          os_int_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri] }
+          os_int_auth_url: { get_param: [EndpointMap, KeystoneInternal, uri] } # PATCH https://review.opendev.org/#/c/669195/
           octavia_local_tmpdir: "{{playbook_dir}}/octavia-ansible/local_dir"
           octavia_group_vars_dir: "{{playbook_dir}}/octavia-ansible/group_vars"
           container_cli: { get_param: ContainerCli }

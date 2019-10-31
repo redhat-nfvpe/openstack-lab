@@ -20,7 +20,7 @@ else
 
 	"$ROOT/ssh" -fN openstack-dashboard
 
-	. "$WORKSPACE_ROOT/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
+	. "$WORKSPACE_ROOT/${OPENSTACK_NAME}rc"
 	
 	echo "Username: $OS_USERNAME"
 	echo "Password: $OS_PASSWORD"

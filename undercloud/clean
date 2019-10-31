@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap-with-fetch-results"
+
+"$ROOT/utils/delete-ssh-config" tripleo
+
+"$ROOT/ssh" manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Deleting virtual machine "tripleo"'
+	virsh destroy tripleo || true
+	virsh undefine tripleo || true
+	rm --force /home/manager/libvirt/images/tripleo.qcow2
+
+EOT
+)"

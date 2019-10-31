@@ -2,7 +2,7 @@
 #
 # This is a Heat template environment.
 #
-# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+# See: https://docs.openstack.org/heat/train/template_guide/environment.html
 
 parameter_defaults:
 

@@ -2,10 +2,12 @@
 # Orchestrator
 #
 
-WORKSPACE_ROOT="$ROOT/workspace"
-PASSWORDS_ROOT="$WORKSPACE_ROOT/passwords"
-KEYS_ROOT="$WORKSPACE_ROOT/keys"
-SSH_CONTROL_ROOT="$WORKSPACE_ROOT/ssh-control"
+WORKSPACE_ROOT=$ROOT/workspace
+PASSWORDS_ROOT=$WORKSPACE_ROOT/passwords
+KEYS_ROOT=$WORKSPACE_ROOT/keys
+SSH_CONTROL_ROOT=$WORKSPACE_ROOT/ssh-control
+
+OPENSTACK_LOCAL_DASHBOARD_PORT=8080
 
 #
 # Manager
@@ -21,41 +23,77 @@ MANAGER_OPENSTACK_CONTROL_PLANE_INTERFACE=enp1s0
 VIRTUALBMC_HOST=192.168.122.1
 
 # See: https://pypi.org/project/virtualbmc/
-VIRTUALBMC_VERSION=1.5.0
+VIRTUALBMC_VERSION=1.6.0
 
 # See: https://pypi.org/project/python-openstackclient/
-PYTHON_OPENSTACKCLIENT_VERSION=3.19.0
+PYTHON_OPENSTACKCLIENT_VERSION=4.0.0
 
 # See: https://pypi.org/project/python-heatclient/
-PYTHON_HEATCLIENT_VERSION=1.17.0
+PYTHON_HEATCLIENT_VERSION=1.18.0
 
 # See: https://pypi.org/project/python-neutronclient/
-PYTHON_NEUTRONCLIENT_VERSION=6.12.0
+PYTHON_NEUTRONCLIENT_VERSION=6.14.0
 
 # See: https://pypi.org/project/python-swiftclient/
-PYTHON_SWIFTCLIENT_VERSION=3.8.0
+PYTHON_SWIFTCLIENT_VERSION=3.8.1
 
 # See: https://pypi.org/project/python-octaviaclient/
-PYTHON_OCTAVIACLIENT_VERSION=1.9.0
+PYTHON_OCTAVIACLIENT_VERSION=1.10.0
 
 #
-# Operating system images
+# Operating systems
 #
-# For OpenStack servers, OpenStack infrastructure nodes, and Manager VMs 
+# For:
+#  * Manager VMs (TripleO) 
+#  * Base for infrastructure nodes (undercloud)
+#  * OpenStack servers (workloads)
 # 
 
-# Default user for CentOS GenericCloud is "centos"
-CENTOS7_IMAGE_VERSION=1905
-CENTOS7_IMAGE="http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-$CENTOS7_IMAGE_VERSION.qcow2"
-
-# See: https://alt.fedoraproject.org/cloud/
-FEDORA_IMAGE_VERSION=30
-FEDORA_IMAGE_RELEASE_VERSION=1.2
-FEDORA_IMAGE="https://download.fedoraproject.org/pub/fedora/linux/releases/$FEDORA_IMAGE_VERSION/Cloud/x86_64/images/Fedora-Cloud-Base-$FEDORA_IMAGE_VERSION-$FEDORA_IMAGE_RELEASE_VERSION.x86_64.qcow2"
+TIMEZONE=America/Chicago
 
 NAMESERVER=1.0.0.1
 
-TIMEZONE=America/Chicago
+# Default user for CentOS GenericCloud is "centos"
+CENTOS7_IMAGE_VERSION=1907
+CENTOS7_IMAGE=http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-$CENTOS7_IMAGE_VERSION.qcow2
+
+#CENTOS8_IMAGE_VERSION=1907
+#CENTOS8_IMAGE=http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-$CENTOS7_IMAGE_VERSION.qcow2
+
+FEDORA_IMAGE_VERSION=31
+FEDORA_IMAGE_RELEASE_VERSION=1.9
+FEDORA_IMAGE=https://download.fedoraproject.org/pub/fedora/linux/releases/$FEDORA_IMAGE_VERSION/Cloud/x86_64/images/Fedora-Cloud-Base-$FEDORA_IMAGE_VERSION-$FEDORA_IMAGE_RELEASE_VERSION.x86_64.qcow2
+
+#
+# Infrastructure
+#
+
+VIRTUALBMC_USERNAME=admin
+VIRTUALBMC_PASSWORD=password
+
+# Setting these will implicitly create virtual machines
+CONTROLLER_VIRTUALBMC_PORT=6230
+#COMPUTE_VIRTUALBMC_PORT=6231
+
+#
+# OpenStack
+#
+
+OPENSTACK_NAME=lab
+
+OPENSTACK_VERSION=14
+
+case "$OPENSTACK_VERSION" in
+	13)
+		OPENSTACK_VERSION_NAME=rocky
+		;;
+	14)
+		OPENSTACK_VERSION_NAME=stein
+		;;
+	15)
+		OPENSTACK_VERSION_NAME=train
+		;;
+esac
 
 #
 # TripleO
@@ -63,10 +101,7 @@ TIMEZONE=America/Chicago
 
 TRIPLEO_VERBOSITY=-vv
 
-TRIPLEO_OVERCLOUD_HEAT_STACK=lab
-
-# OpenStack 14 is "stein" 
-TRIPLEO_VERSION=stein
+#TRIPLEO_PATCH=true
 
 # The default container image tag is "current-tripleo-rdo", which can break our deployment because
 # 1) it is updated often and can introduce breaking changes to these scripts, and 2) it is not set
@@ -77,23 +112,41 @@ TRIPLEO_VERSION=stein
 # the logs, indicating that some images of our tag may not have been uploaded yet.
 #
 # For an example tag, see: https://hub.docker.com/r/tripleostein/centos-binary-nova-api/tags
-TRIPLEO_CONTAINER_IMAGE_TAG=d45bbddf5063604b241bc8f14e39d90cae03de8b_24ce03e4
-#TRIPLEO_CONTAINER_IMAGE_TAG=current-tripleo-rdo
+
+case "$OPENSTACK_VERSION_NAME" in
+	stein)
+		# Jun 1 2019
+		#TRIPLEO_CONTAINER_IMAGE_TAG=d45bbddf5063604b241bc8f14e39d90cae03de8b_24ce03e4
+		# Oct 17 2019
+		TRIPLEO_CONTAINER_IMAGE_TAG=368da0171b56be0284ac364574639c308e8f3a42_9f5171a1
+		;;
+	*)
+		TRIPLEO_CONTAINER_IMAGE_TAG=current-tripleo-rdo
+		;;
+esac
 
 #
 # Ceph
 #
 
-# Ceph 14 is "nautilus"
-# (You do not really have a choice here: you must use the Ceph version packaged for the TripleO
+# (We do not really have a choice here: we must use the Ceph version packaged for the TripleO
 # version)
-CEPH_VERSION=nautilus
+CEPH_VERSION=14
 CEPH_RELEASE_VERSION=4.0
-CEPH_RELEASE_SUB_VERSION=4.0.2
+CEPH_RELEASE_SUB_VERSION=4.0.3
+
+case "$CEPH_VERSION" in
+	13)
+		CEPH_VERSION_NAME=luminous
+		;;
+	14)
+		CEPH_VERSION_NAME=nautilus
+		;;
+esac
 
 # See: https://hub.docker.com/r/ceph/daemon/tags
 # Or run: skopeo inspect docker://docker.io/ceph/daemon
-CEPH_CONTAINER_IMAGE_TAG="v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSION-$CEPH_VERSION-centos-7-x86_64"
+CEPH_CONTAINER_IMAGE_TAG=v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSION-$CEPH_VERSION_NAME-centos-7-x86_64
 
 #
 # Octavia
@@ -101,17 +154,4 @@ CEPH_CONTAINER_IMAGE_TAG="v$CEPH_RELEASE_SUB_VERSION-stable-$CEPH_RELEASE_VERSIO
 
 # Unfortunately older Amphora image builds are deleted from the RDO repository, so we cannot lock a
 # specific version here. This means that you might get different behavior each time you deploy RDO. 
-AMPHORA_IMAGE_URL="https://images.rdoproject.org/octavia/$TRIPLEO_VERSION/amphora-x64-haproxy-centos.qcow2"
-
-#
-# OpenStack
-#
-
-OPENSTACK_LOCAL_DASHBOARD_PORT=8080
-
-VIRTUALBMC_USERNAME=admin
-VIRTUALBMC_PASSWORD=password
-
-# Setting these will implicitly create virtual machines
-CONTROLLER_VIRTUALBMC_PORT=6230
-#COMPUTE_VIRTUALBMC_PORT=6231
+AMPHORA_IMAGE_URL=https://images.rdoproject.org/octavia/$OPENSTACK_VERSION_NAME/amphora-x64-haproxy-centos.qcow2

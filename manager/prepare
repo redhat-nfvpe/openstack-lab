@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-if [ "$1" == '-c' ]; then
+if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
@@ -33,7 +33,7 @@ NETWORK_PUBLIC_XML=$(cat "$ROOT/configuration/libvirt/networks/public.xml" |
 
 LIBVIRT_NETWORK_HOOK=$(cat "$ROOT/configuration/libvirt/network-hook")
 
-m '[manager-root] Ensuring keypair authorization for user "root" (you will be prompted for password if not)'
+m '[manager-root] Ensuring keypair authorization for user "root" (you will be prompted for password for the first use)'
 "$ROOT/utils/ensure-ssh-key-authorized" root@manager \
 ssh -i "$KEYS_ROOT/root@manager" "root@$MANAGER_OFFICE_IP_ADDRESS"
 
@@ -274,7 +274,7 @@ PASSWORD=$("$ROOT/utils/get-password" manager@manager)
 		systemctl daemon-reload
 	 	systemctl start vbmcd
 	 	systemctl enable vbmcd
-	 fi
+	fi
 
 	m "[manager-root] Ensuring user \"manager\" exists and is configured"
 
@@ -319,7 +319,7 @@ sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
 	sed --in-place "/# OpenStack START/,/# OpenStack END/d" "\$HOME/.bashrc"
 	cat >> "\$HOME/.bashrc" <<- _EOT
 		# OpenStack START
-		# For Cliff see: https://docs.openstack.org/cliff/stein/
+		# For Cliff see: https://docs.openstack.org/cliff/train/
 		function openstack_cliff () {
 		  export CLIFF_MAX_TERM_WIDTH=\\\$(tput cols)
 		}

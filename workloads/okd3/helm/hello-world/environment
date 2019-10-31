@@ -1,6 +1,0 @@
-NODEJS_EX_VERSION=0.1
-
-OKD_USER=test-helm
-OKD_PROJECT=hello-world-helm
-OKD_APPLICATION=nodejs-example
-OKD_HELM_CHART="https://github.com/jim-minter/nodejs-ex/raw/helm/helm/nodejs-$NODEJS_EX_VERSION.tgz"

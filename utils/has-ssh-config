@@ -1,13 +1,19 @@
 #!/bin/bash
 set -e
 
+NAME=$1
+
 HERE=$(dirname "$(readlink -f "$0")")
 ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
-. "$ROOT/utils/trap"
 
-"$HERE/prepare" "$1"
-"$HERE/deploy"
-"$HERE/connect"
-"$HERE/deploy-after"
+CONFIG=$WORKSPACE_ROOT/ssh.config
+
+if [ -f "$CONFIG" ]; then
+	if grep --quiet "^Host \"$NAME\"" "$CONFIG"; then
+		exit 0
+	fi
+fi
+
+exit 1

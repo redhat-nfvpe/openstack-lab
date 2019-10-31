@@ -11,15 +11,15 @@ ROOT=$(readlink -f "$HERE/../..")
 
 	$SCRIPT_PREAMBLE
 
-	ROOT="\$HOME/workloads/okd3"
+	ROOT=\$HOME/workloads/okd3
 
-	. "\$HOME/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc"
+	. "\$HOME/${OPENSTACK_NAME}rc"
 
 	# Note: The playbooks may try to run the "openstack" command, which we already installed for
 	# Python 3 (they are in ~/.local/bin)
 
-	PATH="\$PATH:\$HOME/.local/bin" \
-	ANSIBLE_CONFIG="\$ROOT/ansible.cfg" \
+	PATH=\$PATH:\$HOME/.local/bin \
+	ANSIBLE_CONFIG=\$ROOT/ansible.cfg \
 	OPENSHIFT_CLUSTER=okd-cluster \
 	OS_PROJECT_DOMAIN_NAME=okd \
 	OS_PROJECT_NAME=okd \

@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+OKD_USER=$1
+OKD_PROJECT=$2
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+m "[okd] Logging in as \"$OKD_USER\""
+
+# Note: this will create both the user and an "allow_all:" identity
+# The password does *not matter*, you can subsequently login with *any* password,
+# even on the Web Console
+"$HERE/oc" \
+login --username="$OKD_USER" --password=doesntmatter
+
+m "[okd] Creating project \"$OKD_PROJECT\""
+
+"$HERE/oc" \
+new-project "$OKD_PROJECT"

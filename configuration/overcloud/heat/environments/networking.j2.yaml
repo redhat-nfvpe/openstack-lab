@@ -10,7 +10,7 @@
 # hardcoded default of "network/config/single-nic-vlans/". We've also removed misplaced Neutron
 # configuration and moved it to "neutron.yaml".
 #
-# See: https://docs.openstack.org/heat/stein/template_guide/environment.html
+# See: https://docs.openstack.org/heat/train/template_guide/environment.html
 
 #This file is an example of an environment file for defining the isolated
 #networks and related parameters.

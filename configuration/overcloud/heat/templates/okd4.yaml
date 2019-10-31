@@ -1,0 +1,30 @@
+# See: https://docs.openstack.org/heat/train/template_guide/
+
+heat_template_version: 2018-08-31
+
+description: >-
+  OKD stack
+
+parameters:
+
+  coreos-image-url:
+    type: string
+    label: CoreOS image URL
+
+  coreos-version:
+    type: string
+    label: CoreOS version
+
+resources:
+
+  coreos:
+    type: OS::Glance::WebImage
+    properties:
+      name: coreos
+      visibility: private
+      os_distro: coreos # should be lowercase
+      os_version: { get_param: coreos-version }
+      architecture: x86_64
+      location: { get_param: coreos-image-url }
+      container_format: bare
+      disk_format: qcow2

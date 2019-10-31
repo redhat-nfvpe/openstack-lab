@@ -1,0 +1,103 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+. "$HERE/environment"
+
+# Using "-t" to improve wget display
+"$ROOT/ssh" -t manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Ensuring ChartMuseum is installed'
+	if [ ! -f "/usr/local/bin/chartmuseum" ]; then
+		wget \
+			--output-document="/usr/local/bin/chartmuseum" \
+			"https://s3.amazonaws.com/chartmuseum/release/v$CHARTMUSEUM_VERSION/bin/linux/amd64/chartmuseum"
+		chmod +x "/usr/local/bin/chartmuseum"
+	fi
+
+	cat > /etc/chartmuseum.yaml <<- _EOT
+		port: $CHARTMUSEUM_PORT
+		storage.backend: local
+		storage.local.rootdir: /var/lib/chartmuseum/
+	_EOT
+
+	if [ ! -f /etc/systemd/system/chartmuseum.service ]; then
+		cat > /etc/systemd/system/chartmuseum.service <<- _EOT
+			[Unit]
+			AssertPathExists=/usr/local/bin/chartmuseum
+			ProtectSystem=strict
+	
+			[Service]
+			ExecStart=/usr/local/bin/chartmuseum --config=/etc/chartmuseum.yaml 
+			ReadWritePaths=/var/lib/chartmuseum/
+	
+			Restart=always
+			ProtectKernelModules=true
+			ProtectControlGroup=true
+			ProtectKernelTunables=true
+			# Note: CentOS 7 ignores "ProtectSystem=strict", but let's keep it here for the future
+			ProtectSystem=strict
+	
+			[Install]
+			WantedBy=default.target
+		_EOT
+
+		chmod 0644 /etc/systemd/system/chartmuseum.service
+		systemctl daemon-reload
+	 	systemctl start chartmuseum
+	 	systemctl enable chartmuseum
+	fi
+
+	# helm install --name-template=chartmuseum "https://kubernetes-charts.storage.googleapis.com/chartmuseum-$CHARTMUSEUM_VERSION.tgz"
+	# POD_NAME=\$(oc get pods --namespace hello-world-helm -l "app=chartmuseum" -l "release=chartmuseum" -o jsonpath="{.items[0].metadata.name}")
+	# oc port-forward \$POD_NAME 8879:8080
+
+EOT
+)"
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[helm] Ensuring ChartMuseum plugins are installed'
+	helm plugin install https://github.com/chartmuseum/helm-push || true
+
+	m '[helm] Ensure "local" repository is ChartMuseum'
+	helm repo add local http://127.0.0.1:$CHARTMUSEUM_PORT
+
+	ROOT="\$HOME/workloads/onap"
+
+	m '[manager] Ensuring ONAP OOM is installed'
+	if [ ! -d "\$ROOT/oom" ]; then
+		git clone --branch="$ONAP_VERSION" --recurse-submodules http://gerrit.onap.org/r/oom "\$ROOT/oom"
+	fi
+
+	m '[manager] Patching ONAP OOM to push to ChartMuseum'
+	PATTERN='s|helm package -d \$(PACKAGE_DIR) \$\*; fi|helm package -d \$(PACKAGE_DIR) \$*; helm push --force \$* http://127.0.0.1:$CHARTMUSEUM_PORT; fi|g'
+	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/Makefile"
+	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/common/Makefile"
+	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/sdnc/Makefile"
+
+	m '[helm] Ensuring ONAP OOM plugins are installed'
+	helm plugin install "\$ROOT/oom/kubernetes/helm/plugins/deploy/" || true
+	helm plugin install "\$ROOT/oom/kubernetes/helm/plugins/undeploy/" || true
+
+	cd "\$ROOT/oom/kubernetes"
+
+	m '[helm] Patching etcd chart'
+	if ! grep --quiet --line-regexp '^apiVersion:.*' common/etcd/Chart.yaml; then
+		echo 'apiVersion: v1' >> common/etcd/Chart.yaml
+	fi
+
+	m '[helm] Building ONAP charts'
+	make
+
+EOT
+)"

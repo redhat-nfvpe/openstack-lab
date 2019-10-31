@@ -35,8 +35,8 @@ UNDERCLOUD_CONF=$(cat "$ROOT/configuration/undercloud/undercloud.conf" |
 
 	# See: /var/log/tripleo-container-image-prepare.log
 
-	# Annoyingly, the TripleO default locks some container images at specific versions while leaving
-	# others at latest upstream versions, so we will make sure to manually lock those, too
+	# The TripleO default locks some container images at specific versions while leaving others at
+	# their latest upstream versions, so we will make sure to manually lock all versions
 
 	python2 <<- _EOT
 		import yaml
@@ -60,4 +60,7 @@ UNDERCLOUD_CONF=$(cat "$ROOT/configuration/undercloud/undercloud.conf" |
 EOT
 )"
 
-"$HERE/patch"
+# Not needed anymore?
+if [ "$TRIPLEO_PATCH" == true ]; then
+	"$HERE/patch"
+fi

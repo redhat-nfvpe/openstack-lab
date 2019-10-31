@@ -2,18 +2,18 @@
 set -e
 
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../..")
+ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
 m '[okd] Logging in as "system:admin"'
 
-"$HERE/../oc" \
+"$ROOT/workloads/okd3/oc" \
 login --username=system:admin --namespace=default
 
 m '[okd] Deleting deployment "tiller-deploy" from "kube-system"'
 
-"$HERE/../oc" \
+"$ROOT/workloads/okd3/oc" \
 delete deployment tiller-deploy \
 	--namespace=kube-system || true

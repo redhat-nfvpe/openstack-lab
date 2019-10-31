@@ -122,7 +122,7 @@ user's home directory), e.g.:
     undercloud/openstack network list
 
 The `openstack` command is mostly documented
-[here](https://docs.openstack.org/python-openstackclient/stein/cli/), though note that it is
+[here](https://docs.openstack.org/python-openstackclient/train/cli/), though note that it is
 extensible. Ironic adds
 [these commands](https://docs.openstack.org/python-ironicclient/latest/cli/osc_plugin_cli.html)
 and TripleO adds

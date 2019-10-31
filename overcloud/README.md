@@ -43,6 +43,9 @@ nodes. We can set up a `watch` like so:
 
     watch manager/undercloud/openstack baremetal node list
 
+
+openstack baremetal node list && openstack server list
+
 We should see the nodes getting an "Instance UUID" and then changing their provisioning
 state from "available" to "deploying". They should then power on and change to "wait call-back".
 As they start to PXE boot the state will go back to "deploying" and finally "active" when they are
@@ -93,7 +96,7 @@ openstack/openstack user list
 openstack/openstack stack failures list
 
 The `openstack` command is documented
-[here](https://docs.openstack.org/python-openstackclient/stein/cli/).
+[here](https://docs.openstack.org/python-openstackclient/train/cli/).
 
 
 MISSING PIECES FROM ABAYS

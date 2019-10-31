@@ -15,7 +15,7 @@ ROOT=$HERE
 # output width to the width of our terminal ("CLIFF_FIT_WIDTH=1" doesn't seem to work)
 
 "$ROOT/ssh" manager \
-". \"\$HOME/${TRIPLEO_OVERCLOUD_HEAT_STACK}rc\" 
+". \"\$HOME/${OPENSTACK_NAME}rc\" 
 CLIFF_MAX_TERM_WIDTH=\"$(tput cols)\" \
 OS_PROJECT_DOMAIN_NAME=$(c "$DOMAIN") \
 OS_PROJECT_NAME=$(c "$PROJECT") \
