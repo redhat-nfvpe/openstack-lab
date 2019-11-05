@@ -311,7 +311,7 @@ sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
 		python-swiftclient==$(c "$PYTHON_SWIFTCLIENT_VERSION") \
 		python-octaviaclient==$(c "$PYTHON_OCTAVIACLIENT_VERSION")
 
-	m '[tripleo] Updating OpenStack Cliff configuration'
+	m '[manager] Updating OpenStack Cliff configuration'
 
 	# For quality of life we will make sure that the "openstack" command (Cliff) will always limit
 	# its output width to the width of our terminal ("CLIFF_FIT_WIDTH=1" doesn't seem to work)
@@ -319,6 +319,9 @@ sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
 	sed --in-place "/# OpenStack START/,/# OpenStack END/d" "\$HOME/.bashrc"
 	cat >> "\$HOME/.bashrc" <<- _EOT
 		# OpenStack START
+		if [ -f "\$HOME/${OPENSTACK_NAME}rc" ]; then
+		  . "\$HOME/${OPENSTACK_NAME}rc"
+		fi
 		# For Cliff see: https://docs.openstack.org/cliff/train/
 		function openstack_cliff () {
 		  export CLIFF_MAX_TERM_WIDTH=\\\$(tput cols)
@@ -329,6 +332,19 @@ sshpass -p "$PASSWORD" ssh "manager@$MANAGER_OFFICE_IP_ADDRESS"
 		fi
 		# OpenStack END
 	_EOT
+
+	m '[manager] Updating bash completion'
+
+	cat > "\$HOME/.bash_completion" <<- _EOT
+		if [ -d "\$HOME/.bash_completion.d/" ]; then
+		  for F in "\$HOME/.bash_completion.d/"*; do
+		    . "\\\$F"
+		  done
+		fi
+	_EOT
+
+	mkdir --parents "\$HOME/.bash_completion.d/"
+	"\$HOME/.local/bin/openstack" complete > "\$HOME/.bash_completion.d/openstack"
 
 EOT
 )"

@@ -69,6 +69,9 @@ EQ_TRIPLEO_VERSION=$(eq "$OPENSTACK_VERSION_NAME")
 	sed --in-place "/# OpenStack START/,/# OpenStack END/d" "\$HOME/.bashrc"
 	cat >> "\$HOME/.bashrc" <<- _EOT
 		# OpenStack START
+		if [ -f "\$HOME/stackrc" ]; then
+		  . "\$HOME/stackrc"
+		fi
 		# For Cliff see: https://docs.openstack.org/cliff/train/
 		function openstack_cliff () {
 		  export CLIFF_MAX_TERM_WIDTH=\\\$(tput cols)
@@ -79,6 +82,20 @@ EQ_TRIPLEO_VERSION=$(eq "$OPENSTACK_VERSION_NAME")
 		fi
 		# OpenStack END
 	_EOT
+
+	m '[tripleo] Updating bash completion'
+
+	cat > "\$HOME/.bash_completion" <<- _EOT
+		if [ -d "\$HOME/.bash_completion.d/" ]; then
+		  for F in "\$HOME/.bash_completion.d/"*; do
+		    . "\\\$F"
+		  done
+		fi
+	_EOT
+
+	# BUG: https://bugzilla.redhat.com/show_bug.cgi?id=1672394
+	mkdir --parents "\$HOME/.bash_completion.d/"
+	openstack complete | sed '/DEBUG osc_lib.clientmanager/d' > "\$HOME/.bash_completion.d/openstack"
 
 EOT
 )"

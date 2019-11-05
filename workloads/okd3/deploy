@@ -79,4 +79,18 @@ m '[manager] Ensuring "oc" is installed'
 	--args "flat=true src=/bin/oc dest=/home/manager/workloads/okd3/oc" \
 	masters[0]
 
-"$ROOT/ssh" manager "chmod +x \"\$HOME/workloads/okd3/oc\""
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	ROOT=\$HOME/workloads/okd3
+
+	chmod +x "\$ROOT/oc"
+
+	m '[okd] Updating bash completion'
+
+	mkdir --parents "\$HOME/.bash_completion.d/"
+	"\$ROOT/oc" completion bash > "\$HOME/.bash_completion.d/oc"
+
+EOT
+)"

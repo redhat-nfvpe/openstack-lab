@@ -29,7 +29,7 @@ EOT
 )"
 
 # Using "-t" to improve wget display
-"$ROOT/ssh" manager "$(cat <<- EOT
+"$ROOT/ssh" -t manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
 
@@ -38,6 +38,7 @@ EOT
 	# See: https://github.com/openshift/openshift-ansible/issues/11820
 
 	m '[manager] Ensuring Ansible is installed'
+
 	pip install --user --upgrade \
 		ansible==$(c "$ANSIBLE_VERSION") \
 		shade==$(c "$SHADE_VERSION") \
@@ -48,25 +49,36 @@ EOT
 	mkdir --parents "\$ROOT/"
 
 	m '[manager] Ensuring OpenShift Ansible is installed'
+
 	if [ ! -d "\$ROOT/openshift-ansible" ]; then
 		git clone --branch="release-$OKD_VERSION" https://github.com/openshift/openshift-ansible.git "\$ROOT/openshift-ansible"
 		#tag = "v$OKD_VERSION" # tag
 	fi
 
 	m '[manager] Ensuring "kubectl" is installed'
+
 	if [ ! -f "\$ROOT/kubectl" ]; then
 	 	wget \
 	 		--output-document="\$ROOT/kubectl" \
 	 		"https://storage.googleapis.com/kubernetes-release/release/v$KUBECTL_VERSION/bin/linux/amd64/kubectl"
 
 		chmod +x "\$ROOT/kubectl"
+
+		m '[okd] Updating bash completion'
+
+		mkdir --parents "\$HOME/.bash_completion.d/"
+		"\$ROOT/kubectl" completion bash > "\$HOME/.bash_completion.d/kubectl"
 	fi
 
 	m '[manager] Updating PATH in ".bashrc"'
+
 	sed --in-place "/# OKD3 START/,/# OKD3 END/d" "\$HOME/.bashrc"
 	cat >> "\$HOME/.bashrc" <<- _EOT
 		# OKD3 START
 		PATH="\\\$PATH:\$ROOT"
+		if [ -f "\$ROOT/completion.sh" ]; then
+			. "\$ROOT/completion.sh"
+		fi
 		# OKD3 END
 	_EOT
 

@@ -32,5 +32,10 @@ ROOT=$(readlink -f "$HERE/../..")
 
 	"\$ROOT/helm" init
 
+	m '[helm] Updating bash completion'
+
+	mkdir --parents "\$HOME/.bash_completion.d/"
+	"\$ROOT/helm" completion bash > "\$HOME/.bash_completion.d/helm"
+
 EOT
 )"
