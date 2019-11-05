@@ -1,3 +1,4 @@
 OKD_USER=test
 OKD_PROJECT=hello-world
+
 OKD_APP_TEMPLATE=cakephp-mysql-example

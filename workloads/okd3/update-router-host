@@ -1,28 +1,12 @@
 #!/bin/bash
 set -e
 
+HOST=$1
+
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../..")
+ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
-. "$ROOT/utils/trap"
-
-if [ "$1" == -c ]; then
-	"$HERE/clean"
-fi
-
-. "$HERE/environment"
-
-"$ROOT/workloads/okd3/create-tenant" "$OKD_USER" "$OKD_PROJECT"
-
-HOST=$OKD_APPLICATION-$OKD_PROJECT.apps.okd.lab
-
-m "[helm] Deploying chart \"$OKD_HELM_CHART\""
-
-"$HERE/../helm" \
-install "$OKD_HELM_CHART" \
-	--name-template="$OKD_HELM_TEMPLATE" \
-	--namespace="$OKD_PROJECT"
 
 m "[manager-root] Updating /etc/hosts for $HOST"
 

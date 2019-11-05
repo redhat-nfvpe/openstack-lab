@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+if [ "$1" == -c ]; then
+	"$HERE/clean"
+fi
+
+. "$HERE/environment"
+
+"$HERE/../create-tenant" "$OKD_USER" "$OKD_PROJECT"
+
+m "[helm] Deploying chart \"$HELM_CHART\""
+
+"$HERE/../helm" \
+install "$HELM_CHART_URL" \
+	--name-template="$HELM_TEMPLATE" \
+	--namespace="$OKD_PROJECT"
+
+"$ROOT/workloads/okd3/oc" \
+expose service "$HELM_TEMPLATE-$HELM_CHART"
+
+"$ROOT/workloads/okd3/update-router-host" "$HELM_TEMPLATE-$HELM_CHART-$OKD_PROJECT.apps.okd.lab"

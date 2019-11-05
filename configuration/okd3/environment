@@ -21,5 +21,5 @@ DNSPYTHON_VERSION=1.16.0
 KUBECTL_VERSION=1.16.2
 
 # See: https://github.com/helm/helm/releases
-HELM_VERSION=3.0.0-rc.1
-#HELM_VERSION=2.14.3
+HELM_VERSION=3.0.0-rc.2
+#HELM_VERSION=2.16.0-rc.2

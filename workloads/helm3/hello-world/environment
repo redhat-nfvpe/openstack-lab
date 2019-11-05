@@ -1,0 +1,8 @@
+OKD_USER=test-helm
+OKD_PROJECT=hello-world-helm
+
+HELM_TEMPLATE=hello-world
+
+HELM_CHART=nextcloud
+HELM_CHART_VERSION=1.8.0
+HELM_CHART_URL=https://kubernetes-charts.storage.googleapis.com/$HELM_CHART-$HELM_CHART_VERSION.tgz

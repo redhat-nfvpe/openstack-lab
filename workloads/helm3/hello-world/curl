@@ -9,6 +9,4 @@ ROOT=$(readlink -f "$HERE/../../..")
 
 . "$HERE/environment"
 
-HOST=$OKD_APPLICATION-$OKD_PROJECT.apps.okd.lab
-
-"$ROOT/ssh" manager "curl $(c $HOST)"
+"$ROOT/ssh" manager "curl $HELM_TEMPLATE-$HELM_CHART-$OKD_PROJECT.apps.okd.lab/login"

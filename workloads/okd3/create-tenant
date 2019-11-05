@@ -9,11 +9,16 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 
-m "[okd] Logging in as \"$OKD_USER\""
+m "[okd] Creating user \"$OKD_USER\""
 
-# Note: this will create both the user and an "allow_all:" identity
-# The password does *not matter*, you can subsequently login with *any* password,
-# even on the Web Console
+# By default, logging in with a non-existing user will create it
+# Also note that all users have at least one corresponding identity automatically created for them
+# See: https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
+
+# For the default "allow_all" identity provider the password does *not matter*
+# You can subsequently login with *any* password
+# (On the Web Console you must use a non-empty password)
+
 "$HERE/oc" \
 login --username="$OKD_USER" --password=doesntmatter
 
