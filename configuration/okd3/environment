@@ -1,25 +1,22 @@
 OKD_VERSION=3.11
 
+# See: https://kubernetes.io/docs/tasks/tools/install-kubectl/
+#      curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt
+KUBECTL_VERSION=1.16.2
+
 # See: https://pypi.org/project/ansible/
 # BUG: Playbooks do *not* work on Ansible 2.6+
 # See: https://github.com/openshift/openshift-ansible/issues/11819
+#ANSIBLE_VERSION=2.9.0
 #ANSIBLE_VERSION=2.8.3
 #ANSIBLE_VERSION=2.6.2
 ANSIBLE_VERSION=2.5.15
 
 # See: https://pypi.org/project/selinux/
-SELINUX_VERSION=0.2.0
+SELINUX_VERSION=0.2.1
 
 # See: https://pypi.org/project/shade/
 SHADE_VERSION=1.32.0
 
 # See: https://pypi.org/project/dnspython/
 DNSPYTHON_VERSION=1.16.0
-
-# See: https://kubernetes.io/docs/tasks/tools/install-kubectl/
-#      curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt
-KUBECTL_VERSION=1.16.2
-
-# See: https://github.com/helm/helm/releases
-HELM_VERSION=3.0.0-rc.2
-#HELM_VERSION=2.16.0-rc.2

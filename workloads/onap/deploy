@@ -7,25 +7,21 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$HERE/environment"
+if [ "$1" == -c ]; then
+	"$HERE/clean"
+fi
 
-"$ROOT/rsync" \
-	"$ROOT/configuration/onap/"* \
-	manager:workloads/onap/oom/kubernetes/onap/resources/overrides/
+. "$ROOT/configuration/onap/environment"
 
-"$ROOT/ssh" manager "$(cat <<- EOT
+"$ROOT/workloads/helm3/create-tenant" "$OKD_USER" "$OKD_PROJECT"
 
-	$SCRIPT_PREAMBLE
+function deploy () {
+	COMPONENT=$1
+	m "[helm] Deploying component \"$COMPONENT\""
+	"$ROOT/workloads/helm3/helm" install "local/$COMPONENT" \
+		--name-template="$HELM_TEMPLATE" \
+		--namespace="$OKD_PROJECT" \
+		--debug
+}
 
-	ROOT="\$HOME/workloads/onap"
-
-	m '[helm] Deploying ONAP'
-	helm undeploy onap
-	# BUG: values not applied?
-	helm deploy onap local/onap \
-		--values "\$ROOT/oom/kubernetes/onap/resources/overrides/onap-all.yaml" \
-		--timeout 900s \
-		--verbose
-
-EOT
-)"
+deploy so

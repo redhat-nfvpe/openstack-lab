@@ -15,8 +15,8 @@ fi
 
 "$ROOT/rsync" \
 	--rsync-path='mkdir --parents /home/manager/workloads/okd3/ && rsync' \
-	"$ROOT/configuration/overcloud/heat/templates/okd-tenant.yaml" \
-	"$ROOT/configuration/overcloud/heat/templates/okd.yaml" \
+	"$ROOT/configuration/okd3/okd-tenant.yaml" \
+	"$ROOT/configuration/okd3/okd.yaml" \
 	manager:/home/manager/workloads/okd3/
 
 m '[openstack] Creating "okd-tenant" stack'

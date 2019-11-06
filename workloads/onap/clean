@@ -2,11 +2,11 @@
 set -e
 
 HERE=$(dirname "$(readlink -f "$0")")
-ROOT=$(readlink -f "$HERE/../../..")
+ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$ROOT/configuration/helm3/hello-world/environment"
+. "$ROOT/configuration/onap/environment"
 
 "$ROOT/workloads/okd3/delete-tenant" "$OKD_USER" "$OKD_PROJECT"

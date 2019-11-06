@@ -1,0 +1,33 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+. "$ROOT/utils/trap"
+
+. "$HERE/environment"
+
+"$ROOT/rsync" \
+	"$ROOT/configuration/onap/"* \
+	manager:workloads/onap/oom/kubernetes/onap/resources/overrides/
+
+"$ROOT/ssh" manager "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	ROOT="\$HOME/workloads/onap"
+
+	helm install local/so --generate-name
+
+	m '[helm] Deploying ONAP'
+	helm undeploy onap
+	# BUG: values not applied?
+	helm deploy onap local/onap \
+		--values "\$ROOT/oom/kubernetes/onap/resources/overrides/onap-all.yaml" \
+		--timeout 900s \
+		--verbose
+
+EOT
+)"

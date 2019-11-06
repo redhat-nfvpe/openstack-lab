@@ -1,0 +1,6 @@
+ONAP_VERSION=5.0.1-ONAP
+
+OKD_USER=onap-admin
+OKD_PROJECT=onap
+
+HELM_TEMPLATE=lab

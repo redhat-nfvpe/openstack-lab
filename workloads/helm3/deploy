@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$ROOT/configuration/okd3/environment"
+. "$ROOT/configuration/helm3/environment"
 
 # Using "-t" to improve wget display
 "$ROOT/ssh" -t manager "$(cat <<- EOT
@@ -39,3 +39,62 @@ ROOT=$(readlink -f "$HERE/../..")
 
 EOT
 )"
+
+# Using "-t" to improve wget display
+"$ROOT/ssh" -t manager-root "$(cat <<- EOT
+
+	$SCRIPT_PREAMBLE
+
+	m '[manager-root] Ensuring ChartMuseum is installed'
+	if [ ! -f "/usr/local/bin/chartmuseum" ]; then
+		wget \
+			--output-document="/usr/local/bin/chartmuseum" \
+			"https://s3.amazonaws.com/chartmuseum/release/v$CHARTMUSEUM_VERSION/bin/linux/amd64/chartmuseum"
+		chmod +x "/usr/local/bin/chartmuseum"
+	fi
+
+	cat > /etc/chartmuseum.yaml <<- _EOT
+		port: $CHARTMUSEUM_PORT
+		storage.backend: local
+		storage.local.rootdir: /var/lib/chartmuseum/
+	_EOT
+
+	if [ ! -f /etc/systemd/system/chartmuseum.service ]; then
+		cat > /etc/systemd/system/chartmuseum.service <<- _EOT
+			[Unit]
+			AssertPathExists=/usr/local/bin/chartmuseum
+			ProtectSystem=strict
+	
+			[Service]
+			ExecStart=/usr/local/bin/chartmuseum --config=/etc/chartmuseum.yaml 
+			ReadWritePaths=/var/lib/chartmuseum/
+	
+			Restart=always
+			ProtectKernelModules=true
+			ProtectControlGroup=true
+			ProtectKernelTunables=true
+			# Note: CentOS 7 ignores "ProtectSystem=strict", but let's keep it here for the future
+			ProtectSystem=strict
+	
+			[Install]
+			WantedBy=default.target
+		_EOT
+
+		chmod 0644 /etc/systemd/system/chartmuseum.service
+		systemctl daemon-reload
+	 	systemctl start chartmuseum
+	 	systemctl enable chartmuseum
+	fi
+
+	# helm install --name-template=chartmuseum "https://kubernetes-charts.storage.googleapis.com/chartmuseum-$CHARTMUSEUM_VERSION.tgz"
+	# POD_NAME=\$(oc get pods --namespace hello-world-helm -l "app=chartmuseum" -l "release=chartmuseum" -o jsonpath="{.items[0].metadata.name}")
+	# oc port-forward \$POD_NAME 8879:8080
+
+EOT
+)"
+
+m '[helm] Ensuring ChartMuseum plugins are installed'
+"$HERE/helm" plugin install https://github.com/chartmuseum/helm-push || true
+
+m '[helm] Ensure "local" repository is ChartMuseum'
+"$HERE/helm" repo add local http://127.0.0.1:$CHARTMUSEUM_PORT
