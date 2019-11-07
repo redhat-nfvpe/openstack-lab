@@ -95,7 +95,7 @@ EQ_TRIPLEO_VERSION=$(eq "$OPENSTACK_VERSION_NAME")
 
 	# BUG: https://bugzilla.redhat.com/show_bug.cgi?id=1672394
 	mkdir --parents "\$HOME/.bash_completion.d/"
-	openstack complete | sed '/DEBUG osc_lib.clientmanager/d' > "\$HOME/.bash_completion.d/openstack"
+	openstack complete | sed '/DEBUG osc_lib./d' | sed '/INFO osc_lib./d' > "\$HOME/.bash_completion.d/openstack"
 
 EOT
 )"
