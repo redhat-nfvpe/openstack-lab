@@ -23,7 +23,7 @@ environments:
 
 # Ceph (storage)
 # See: http://docs.ceph.com/ceph-ansible/
-#      https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/ceph_config.html
+#      https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/features/ceph_config.html
 - "$ENVIRONMENTS/ceph-ansible/ceph-ansible.yaml"
 - "$ENVIRONMENTS/tuned-ceph-filestore-hci.yaml"
 - "$ENVIRONMENTS/ceph.yaml"

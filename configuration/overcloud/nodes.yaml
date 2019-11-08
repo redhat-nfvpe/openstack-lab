@@ -3,7 +3,7 @@
 # Used by "openstack overcloud node import".
 #
 # Custom format. See:
-#   https://docs.openstack.org/tripleo-docs/latest/install/environments/baremetal.html#instackenv
+#   https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/environments/baremetal.html#instackenv-json
 #
 # Note: This file is often named "instackenv" and is sometimes in JSON rather than YAML.
 #
@@ -53,7 +53,7 @@
 # then you should set your machine to use BIOS/CSM *only*.
 #
 # See also:
-#   https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/uefi_boot.html
+#   https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/provisioning/uefi_boot.html
 #
 # Overriding
 # ----------

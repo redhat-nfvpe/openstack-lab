@@ -71,7 +71,7 @@ m "[manager] Fetching OpenStack admin access credentials"
 # TODO: enable multi-domain on dashboard
 # https://www.ibm.com/support/knowledgecenter/en/SS4KMC_2.5.0.9/com.ibm.ico.doc_2.5/enableosdashboard.html
 
-m "[manager] Enabling local port $OPENSTACK_LOCAL_DASHBOARD_PORT for dashboard forwarded via ssh \"openstack-dashboard\""
+m "[manager] Enabling local port $OPENSTACK_LOCAL_DASHBOARD_PORT for dashboard forwarded via ssh host \"openstack-dashboard\""
 
 . "$WORKSPACE_ROOT/${OPENSTACK_NAME}rc"
 

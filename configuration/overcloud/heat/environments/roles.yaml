@@ -1,25 +1,27 @@
-# Infrastructure node requests per each role.
+# Infrastructure nodes required per each role.
 #
 # This is a Heat template environment.
 #
 # Infrastructure nodes are assigned to roles via an algorithm that iterates available
-# infrastructure nodes and checks if they meet the requirements for the role. The requirements are
-# specified via the "flavor".
+# infrastructure nodes and checks if they meet the requirements for the role, which are specified
+# via the associated "flavor".
 #
-# Flavors must be one of the options from "openstack flavor list". Each flavor specifies minimum
-# hardware capabilities for an infrastructure node, but can also specify a required "profile" tag.
-# If the infrastructure node does not have that profile tag then it will not match. If it has
-# multiple profile tags and one of them matches then the algorithm will assign the role, and *also*
-# set the "current profile" for the infrastructure node to the matched profile.
+# Flavors must be one of the options from "openstack flavor list" (undercloud). Each flavor
+# specifies minimum hardware capabilities for an infrastructure node, but can also specify a
+# required "profile" tag. If the infrastructure node does not have that profile tag then it will not
+# match. If it has multiple profile tags and any of them matches (logical "or") then the algorithm
+# will assign the role, and *also* set the "current profile" for the infrastructure node to the
+# matched profile.
 #
 # For convenience, the default flavors are preconfigured to require a profile tag of the same name,
 # e.g. flavor "compute" requires the profile tag "compute". The exception is flavor "baremetal"
-# (the default), which doesn't require any profile tag. Specifying that flavor for a role here means
-# that any infrastructure node (that meets the minimum hardware capabilities) could be matched.
+# (the default), which doesn't require any profile tag. Specifying that flavor for a role
+# essentially means that *any* infrastructure node (that meets the minimum hardware capabilities)
+# would be matched.
 #
-# Thus, if you want an infrastructure node to be assignable to only one role, then you must 1) give
-# it a profile tag, 2) make sure there's a flavor that requires that tag, and 3) select that flavor
-# for the role here.
+# Thus, if you want an infrastructure node to be assignable to one and only one role, then you must
+# 1) give it a profile tag, 2) make sure there's a flavor that requires that tag, and 3) select that
+# flavor for the role here.
 #
 # See all current profile assignments with "openstack overcloud profiles list".
 #
@@ -29,7 +31,7 @@
 # "ControllerCount: 0".
 #
 # See:
-#   https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/profile_matching.html
+#   https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/provisioning/profile_matching.html
 #   https://docs.openstack.org/heat/train/template_guide/environment.html
 
 parameter_defaults:

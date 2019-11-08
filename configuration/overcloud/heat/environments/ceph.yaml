@@ -3,7 +3,7 @@
 # This is a Heat template environment.
 #
 # See:
-#   https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/ceph_config.html
+#   https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/features/ceph_config.html
 #   https://docs.openstack.org/heat/train/template_guide/environment.html
 
 parameter_defaults:
@@ -13,14 +13,19 @@ parameter_defaults:
   # Pool
   # ----
 
-  # See the Ceph page calculator: https://ceph.com/pgcalc/
-
-  # Note: The default values might cause this error during deployment: 
+  # The default pool size of 3 can cause an error during deployment:
   # "pg_num 128 size 3 would mean 768 total pgs, which exceeds max 750"
-  # See also: https://bugs.launchpad.net/kolla-ansible/+bug/1763356
+  # The basic issue is that we cannot have a pool size bigger than the total amount of storage nodes
+  # (our lab has only 1 node)
+  CephPoolDefaultSize: 1
 
-  CephPoolDefaultSize: 1 # the default is 3
-  #CephPoolDefaultPgNum: 64 # the default is 128
+  # But even if deployment succeeds, we might still get a placement group warning:
+  # "too many PGs per OSD (320 > max 250)" when running "ceph status"
+  # (Note that that the Ceph runtime max is different from the Ceph Ansible max used above)
+  # See: https://bugs.launchpad.net/kolla-ansible/+bug/1763356
+  #      https://docs.ceph.com/docs/mimic/rados/operations/placement-groups/
+  # To see the pg_num value at runtime: "ceph osd pool get images pg_num"
+  CephPoolDefaultPgNum: 16 # the default is 128
 
   # Disks
   # -----
@@ -36,6 +41,6 @@ parameter_defaults:
   # ----------------
 
   # See note here under "ceph-ansible 3.2 and newer":
-  # https://docs.openstack.org/tripleo-docs/latest/install/advanced_deployment/ceph_config.html
+  # https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/features/ceph_config.html
   CephAnsibleExtraConfig:
     is_hci: true

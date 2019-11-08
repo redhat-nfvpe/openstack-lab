@@ -15,4 +15,3 @@ fi
 
 "$HERE/common/deploy"
 "$HERE/hello-world/deploy"
-"$HERE/okd3/all"

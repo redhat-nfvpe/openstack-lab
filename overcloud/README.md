@@ -169,6 +169,12 @@ machine is assigned a role that defines which OpenStack components run on it:
   So, on the lab we want this machine to be alloted a lot of disk space. RAM and CPU defaults
   should suffice.
 
+./ceph status
+./podman-bash lab-controller-0 ceph-mon-lab-controller-0
+./podman-bash lab-controller-0 ceph-mgr-lab-controller-0
+./podman-bash lab-computehci-0 ceph-osd-0
+  ceph-volume inventory
+
 > One interesting implementation detail: if you remember, our cloud manager uses OpenStack's
 [Ironic](https://wiki.openstack.org/wiki/Ironic) component to manage the cloud machines. You might
 think that it only uses Ironic for bare metal machines, which is what it was designed for. In the

@@ -18,7 +18,11 @@ else
 
 	"$HERE/ssh" -t "$HOST" "$(cat <<- EOT
 		CONTAINER_ID=\$(sudo podman ps --quiet --filter name=$C_NAME | head --lines=+1)
-		sudo podman exec -it "\$CONTAINER_ID" /bin/bash
+		if [ $# -gt 2 ]; then
+			sudo podman exec -it "\$CONTAINER_ID" /bin/bash -c $(c "${@:3}")
+		else
+			sudo podman exec -it "\$CONTAINER_ID" /bin/bash
+		fi
 	EOT
 	)"
 
