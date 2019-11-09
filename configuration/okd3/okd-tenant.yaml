@@ -22,6 +22,12 @@ resources:
         OKD project
       domain: { get_resource: domain }
 
+  nova-quota:
+    type: OS::Nova::Quota
+    properties:
+      project: { get_resource: project }
+      ram: -1
+
   admin-user:
     type: OS::Keystone::User
     properties:

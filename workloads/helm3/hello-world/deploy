@@ -13,7 +13,7 @@ fi
 
 . "$ROOT/configuration/helm3/hello-world/environment"
 
-"$HERE/../create-tenant" "$OKD_USER" "$OKD_PROJECT"
+"$ROOT/workloads/okd3/create-tenant" "$OKD_USER" "$OKD_PROJECT" scc:anyuid
 
 m "[helm] Deploying chart \"$HELM_CHART\""
 

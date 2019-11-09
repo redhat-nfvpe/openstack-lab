@@ -23,6 +23,9 @@ login --username=system:admin --namespace=default
 "$ROOT/workloads/okd3/oc" \
 adm policy add-scc-to-user anyuid --namespace="$OKD_PROJECT" --serviceaccount=default
 
+"$ROOT/workloads/okd3/oc" \
+adm policy add-scc-to-user hostaccess --namespace="$OKD_PROJECT" --serviceaccount=default
+
 #"$ROOT/workloads/okd3/oc" \
 #adm policy add-scc-to-user privileged --namespace="$OKD_PROJECT" --serviceaccount="$OKD_USER-service"
 

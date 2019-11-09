@@ -31,6 +31,10 @@ stack output show okd-cluster public_api_ip --format value --column output_value
 EOT
 )"
 
+m "[manager] Enabling local port 8443 for web console forwarded via ssh host \"okd-web-console\""
+
+"$ROOT/utils/ensure-ssh-config-forward" okd-web-console "$MANAGER_OFFICE_IP_ADDRESS" manager manager@manager 8443 console.okd.lab:8443
+
 m '[okd] Logging in as "system:admin"'
 
 "$HERE/oc" \
@@ -38,12 +42,3 @@ login \
 	--username=system:admin \
 	--namespace=default \
 	https://console.okd.lab:8443
-
-m "[manager] Enabling local port 8443 for web console forwarded via ssh \"okd-web-console\""
-
-"$ROOT/utils/ensure-ssh-config-forward" okd-web-console "$MANAGER_OFFICE_IP_ADDRESS" manager manager@manager 8443 console.okd.lab:8443
-
-m '[orchestrator] Updating /etc/hosts for console.okd.lab'
-
-sudo sed --in-place '/^.* console.okd.lab/d' /etc/hosts
-echo "127.0.0.1 console.okd.lab" | sudo tee --append /etc/hosts 

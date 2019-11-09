@@ -10,3 +10,4 @@ ROOT=$(readlink -f "$HERE/../..")
 "$HERE/prepare" "$1"
 "$HERE/deploy"
 "$HERE/connect"
+"$HERE/hello-world/deploy"

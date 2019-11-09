@@ -23,7 +23,7 @@ resources:
       name: okd.default
       is_public: false
       vcpus: 4
-      ram: 8192 # 16384 # MB
+      ram: 16384 # MB
       disk: 45 # GB
 
   okd.node:
@@ -32,7 +32,7 @@ resources:
       name: okd.node
       is_public: false
       vcpus: 4
-      ram: 8192 # 65536 # MB
+      ram: 65536 # MB
       disk: 20 # GB
 
 outputs:

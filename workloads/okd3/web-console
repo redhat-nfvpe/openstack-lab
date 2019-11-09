@@ -20,6 +20,12 @@ if [ "$1" == stop ]; then
 
 else
 
+	if ! grep --quiet "^127.0.0.1 console.okd.lab$" /etc/hosts; then
+		m '[orchestrator] Updating /etc/hosts for console.okd.lab'
+		sudo sed --in-place '/^.* console.okd.lab$/d' /etc/hosts
+		echo "127.0.0.1 console.okd.lab" | sudo tee --append /etc/hosts
+	fi 
+
 	"$ROOT/ssh" -fN okd-web-console
 
 	xdg-open https://console.okd.lab:8443/console/

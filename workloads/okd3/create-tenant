@@ -26,3 +26,37 @@ m "[okd] Creating project \"$OKD_PROJECT\""
 
 "$HERE/oc" \
 new-project "$OKD_PROJECT"
+
+if [ $# -gt 2 ]; then
+
+	m "[okd] Granting privileges to project's default service account"
+
+	"$HERE/oc" \
+	login --username=system:admin --namespace=default
+
+	# See: https://docs.openshift.com/container-platform/3.11/admin_guide/manage_scc.html#listing-security-context-constraints
+	# See: https://docs.openshift.com/container-platform/3.11/architecture/additional_concepts/authorization.html#roles
+
+	for P in "${@:3}"; do
+		if [ "${P:0:4}" == scc: ]; then
+			"$HERE/oc" \
+			adm policy add-scc-to-user "${P:4}" \
+				--namespace="$OKD_PROJECT" \
+				--serviceaccount=default
+		elif [ "${P:0:5}" == role: ]; then
+			"$HERE/oc" \
+			adm policy add-role-to-user ${P:5} \
+				--namespace="$OKD_PROJECT" \
+				--serviceaccount=default
+		elif [ "${P:0:13}" == cluster-role: ]; then
+			"$HERE/oc" \
+			adm policy add-cluster-role-to-user ${P:13} \
+				--namespace="$OKD_PROJECT" \
+				--serviceaccount=default
+		fi
+	done
+
+	"$ROOT/workloads/okd3/oc" \
+	login --username="$OKD_USER"
+
+fi
