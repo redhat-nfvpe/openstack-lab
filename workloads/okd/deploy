@@ -14,21 +14,21 @@ fi
 # See: https://github.com/openshift/openshift-ansible/tree/release-3.11/playbooks/openstack
 
 "$ROOT/rsync" \
-	--rsync-path='mkdir --parents /home/manager/workloads/okd3/ && rsync' \
-	"$ROOT/configuration/okd3/okd-tenant.yaml" \
-	"$ROOT/configuration/okd3/okd.yaml" \
-	manager:/home/manager/workloads/okd3/
+	--rsync-path='mkdir --parents /home/manager/workloads/okd/ && rsync' \
+	"$ROOT/configuration/okd/okd-tenant.yaml" \
+	"$ROOT/configuration/okd/okd.yaml" \
+	manager:/home/manager/workloads/okd/
 
 m '[openstack] Creating "okd-tenant" stack'
 "$ROOT/openstack" \
 stack create okd-tenant \
-	--template /home/manager/workloads/okd3/okd-tenant.yaml \
+	--template /home/manager/workloads/okd/okd-tenant.yaml \
 	--wait -v
 
 m '[openstack] Creating "okd" stack'
 "$HERE/openstack" \
 stack create okd \
-	--template /home/manager/workloads/okd3/okd.yaml \
+	--template /home/manager/workloads/okd/okd.yaml \
 	--wait -v
 
 m '[openstack] Fetching "okd" private key'
@@ -44,21 +44,21 @@ chmod 600 "$KEYS_ROOT/okd"
 	manager:/home/manager/keys/
 
 "$ROOT/rsync" \
-	--rsync-path='mkdir --parents /home/manager/workloads/okd3/inventory/group_vars/ && rsync' \
-	"$ROOT/configuration/okd3/all.yml" \
-	"$ROOT/configuration/okd3/OSEv3.yml" \
-	manager:/home/manager/workloads/okd3/inventory/group_vars/
+	--rsync-path='mkdir --parents /home/manager/workloads/okd/inventory/group_vars/ && rsync' \
+	"$ROOT/configuration/okd/all.yml" \
+	"$ROOT/configuration/okd/OSEv3.yml" \
+	manager:/home/manager/workloads/okd/inventory/group_vars/
 
 "$ROOT/rsync" \
-	"$ROOT/configuration/okd3/ansible.cfg" \
-	manager:/home/manager/workloads/okd3/
+	"$ROOT/configuration/okd/ansible.cfg" \
+	manager:/home/manager/workloads/okd/
 
 # Using "-t" for color output in Ansible
 "$ROOT/ssh" -t manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
 
-	cat > "\$HOME/workloads/okd3/inventory/local" <<- _EOT
+	cat > "\$HOME/workloads/okd/inventory/local" <<- _EOT
 		[local]
 		#localhost ansible_python_interpreter=python3
 	_EOT
@@ -69,21 +69,21 @@ EOT
 m '[manager] Deploying OKD cluster'
 
 "$HERE/ansible-playbook" \
-	/home/manager/workloads/okd3/openshift-ansible/playbooks/openstack/openshift-cluster/provision_install.yml \
+	/home/manager/workloads/okd/openshift-ansible/playbooks/openstack/openshift-cluster/provision_install.yml \
 	-v
 
 m '[manager] Ensuring "oc" is installed'
 
 "$HERE/ansible" \
 	--module-name fetch \
-	--args "flat=true src=/bin/oc dest=/home/manager/workloads/okd3/oc" \
+	--args "flat=true src=/bin/oc dest=/home/manager/workloads/okd/oc" \
 	masters[0]
 
 "$ROOT/ssh" manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
 
-	ROOT=\$HOME/workloads/okd3
+	ROOT=\$HOME/workloads/okd
 
 	chmod +x "\$ROOT/oc"
 

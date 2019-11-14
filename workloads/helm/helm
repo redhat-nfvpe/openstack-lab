@@ -7,4 +7,4 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 
 "$ROOT/ssh" manager \
-"\"\$HOME/workloads/okd3/oc\" $(c "$@")"
+"\"\$HOME/workloads/okd/helm\" $(c "$@")"

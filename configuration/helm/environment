@@ -1,5 +1,5 @@
 # See: https://github.com/helm/helm/releases
-HELM_VERSION=3.0.0-rc.3
+HELM_VERSION=3.0.0
 #HELM_VERSION=2.16.0
 
 # See: https://github.com/helm/chartmuseum/releases

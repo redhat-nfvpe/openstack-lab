@@ -9,31 +9,33 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/configuration/environment"
 . "$ROOT/utils/functions"
 
-m "[okd] Deleting project \"$OKD_PROJECT\""
-
 "$HERE/oc" \
 login --username="$OKD_USER" --password=doesntmatter
+
+m "[okd] Deleting project \"$OKD_PROJECT\""
 
 # This puts the project in "Terminating" state 
 "$HERE/oc" delete project "$OKD_PROJECT" --wait=true || true
 
-m "[okd] Deleting user \"$OKD_USER\""
-
 "$HERE/oc" \
 login --username=system:admin --namespace=default
-
-IDENTITY=$("$HERE/oc" \
-get user "$OKD_USER" --output=jsonpath={.identities[0]})
-
-"$HERE/oc" \
-delete user "$OKD_USER" --wait=true
-
-m "[okd] Deleting identity \"$IDENTITY\""
-
-"$HERE/oc" \
-delete identity "$IDENTITY" --wait=true
 
 while "$HERE/oc" get project "$OKD_PROJECT" > /dev/null 2>&1; do
 	m "[okd] Waiting for project \"$OKD_PROJECT\" to terminate..."
 	sleep 1
 done
+
+m "[okd] Deleting user \"$OKD_USER\""
+
+IDENTITY=$("$HERE/oc" \
+get user "$OKD_USER" --output=jsonpath={.identities[0]} || true)
+
+"$HERE/oc" \
+delete user "$OKD_USER" --wait=true || true
+
+m "[okd] Deleting identity \"$IDENTITY\""
+
+if [ -n "$IDENTITY" ]; then
+	"$HERE/oc" \
+	delete identity "$IDENTITY" --wait=true
+fi

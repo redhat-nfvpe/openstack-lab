@@ -39,24 +39,39 @@ if [ $# -gt 2 ]; then
 
 	for P in "${@:3}"; do
 		if [ "${P:0:4}" == scc: ]; then
+			# By default projects have three service accounts: "default", "deployer", "builder"
+			# Unless specifically specified then "default" will be used
 			"$HERE/oc" \
 			adm policy add-scc-to-user "${P:4}" \
 				--namespace="$OKD_PROJECT" \
 				--serviceaccount=default
 		elif [ "${P:0:5}" == role: ]; then
 			"$HERE/oc" \
-			adm policy add-role-to-user ${P:5} \
+			adm policy add-role-to-user "${P:5}" \
 				--namespace="$OKD_PROJECT" \
 				--serviceaccount=default
+
+# 			"$HERE/oc" \
+# 			adm policy add-role-to-user "${P:5}" \
+# 				--namespace="$OKD_PROJECT" \
+# 				"$OKD_USER"
 		elif [ "${P:0:13}" == cluster-role: ]; then
 			"$HERE/oc" \
-			adm policy add-cluster-role-to-user ${P:13} \
+			adm policy add-cluster-role-to-user "${P:13}" \
 				--namespace="$OKD_PROJECT" \
 				--serviceaccount=default
+
+# 			"$HERE/oc" \
+# 			adm policy add-cluster-role-to-user "${P:13}" \
+# 				--namespace="$OKD_PROJECT" \
+# 				"$OKD_USER"
+		else
+			m "Unsupported permission prefix: \"$P\"" "$RED"
+			exit 1
 		fi
 	done
 
-	"$ROOT/workloads/okd3/oc" \
-	login --username="$OKD_USER"
+	"$ROOT/workloads/okd/oc" \
+	login --username="$OKD_USER" --namespace="$OKD_PROJECT"
 
 fi

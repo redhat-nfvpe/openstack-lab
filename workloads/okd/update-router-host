@@ -10,7 +10,7 @@ ROOT=$(readlink -f "$HERE/../..")
 
 m "[manager-root] Updating /etc/hosts for $HOST"
 
-PUBLIC_ROUTER_IP=$("$ROOT/workloads/okd3/openstack" \
+PUBLIC_ROUTER_IP=$("$ROOT/workloads/okd/openstack" \
 stack output show okd-cluster public_router_ip --format value --column output_value)
 
 "$ROOT/ssh" manager-root "$(cat <<- EOT

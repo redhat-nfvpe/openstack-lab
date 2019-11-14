@@ -7,14 +7,14 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$ROOT/configuration/helm3/environment"
+. "$ROOT/configuration/helm/environment"
 
 # Using "-t" to improve wget display
 "$ROOT/ssh" -t manager "$(cat <<- EOT
 
 	$SCRIPT_PREAMBLE
 
-	ROOT=\$HOME/workloads/okd3
+	ROOT=\$HOME/workloads/okd
 
 	m '[manager] Ensuring "helm" is installed'
 

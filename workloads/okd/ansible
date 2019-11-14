@@ -11,7 +11,7 @@ ROOT=$(readlink -f "$HERE/../..")
 
 	$SCRIPT_PREAMBLE
 
-	ROOT=\$HOME/workloads/okd3
+	ROOT=\$HOME/workloads/okd
 
 	. "\$HOME/${OPENSTACK_NAME}rc"
 

@@ -11,7 +11,7 @@ if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
-. "$ROOT/configuration/okd3/hello-world/environment"
+. "$ROOT/configuration/okd/hello-world/environment"
 
 "$HERE/../create-tenant" "$OKD_USER" "$OKD_PROJECT"
 

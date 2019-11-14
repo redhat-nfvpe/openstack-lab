@@ -11,7 +11,7 @@ if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
-. "$ROOT/configuration/okd3/environment"
+. "$ROOT/configuration/okd/environment"
 
 "$ROOT/ssh" manager-root "$(cat <<- EOT
 
@@ -44,7 +44,7 @@ EOT
 		shade==$(c "$SHADE_VERSION") \
 		dnspython==$(c "$DNSPYTHON_VERSION")
 
-	ROOT=\$HOME/workloads/okd3
+	ROOT=\$HOME/workloads/okd
 
 	mkdir --parents "\$ROOT/"
 

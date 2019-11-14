@@ -7,7 +7,7 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$ROOT/configuration/okd3/environment"
+. "$ROOT/configuration/okd/environment"
 
 if [ "$1" == stop ]; then
 

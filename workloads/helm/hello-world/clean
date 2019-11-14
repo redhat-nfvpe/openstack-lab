@@ -7,6 +7,6 @@ ROOT=$(readlink -f "$HERE/../../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
-. "$ROOT/configuration/helm3/hello-world/environment"
+. "$ROOT/configuration/helm/hello-world/environment"
 
-"$ROOT/ssh" manager "curl $HELM_TEMPLATE-$HELM_CHART-$OKD_PROJECT.apps.okd.lab/login"
+"$ROOT/workloads/okd/delete-tenant" "$OKD_USER" "$OKD_PROJECT"

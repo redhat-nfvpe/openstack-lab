@@ -33,7 +33,7 @@ stack delete okd-tenant \
 
 	$SCRIPT_PREAMBLE
 
-	rm --recursive --force "\$HOME/workloads/okd3/cache"
+	rm --recursive --force "\$HOME/workloads/okd/cache"
 
 EOT
 )"

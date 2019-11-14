@@ -13,15 +13,20 @@ fi
 
 . "$ROOT/configuration/onap/environment"
 
-"$ROOT/workloads/helm3/create-tenant" "$OKD_USER" "$OKD_PROJECT"
+"$ROOT/workloads/okd/create-tenant" "$OKD_USER" "$OKD_PROJECT" scc:privileged cluster-role:cluster-admin
+
+#	scc:anyuid scc:hostaccess scc:hostmount-anyuid scc:hostnetwork scc:nonroot scc:privileged \
+#	cluster-role:cluster-admin
 
 function deploy () {
-	COMPONENT=$1
+	local COMPONENT=$1
 	m "[helm] Deploying component \"$COMPONENT\""
-	"$ROOT/workloads/helm3/helm" install "local/$COMPONENT" \
-		--name-template="$HELM_TEMPLATE" \
+	"$ROOT/workloads/helm/helm" install "local/$COMPONENT" \
+		--name-template="$COMPONENT" \
 		--namespace="$OKD_PROJECT" \
-		--debug
+		--debug \
+		"${@:2}"
 }
 
+deploy mariadb-galera --set persistence.enabled=false
 deploy so

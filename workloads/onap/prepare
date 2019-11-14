@@ -7,12 +7,15 @@ ROOT=$(readlink -f "$HERE/../..")
 . "$ROOT/utils/functions"
 . "$ROOT/utils/trap"
 
+. "$ROOT/configuration/helm/environment"
 . "$ROOT/configuration/onap/environment"
 
 # See: https://onap.readthedocs.io/en/latest/submodules/oom.git/docs/oom_quickstart_guide.html
 # See: https://onap.readthedocs.io/en/latest/guides/onap-developer/settingup/index.html
 # See: https://github.com/onap/oom
 # See: https://github.com/onap/oom/blob/5.0.1-ONAP/docs/oom_quickstart_guide.rst
+
+PATCH=$(cat "$ROOT/patches/onap/patch")
 
 "$ROOT/ssh" manager "$(cat <<- EOT
 
@@ -23,26 +26,13 @@ ROOT=$(readlink -f "$HERE/../..")
 	m '[manager] Ensuring ONAP OOM is installed'
 	if [ ! -d "\$ROOT/oom" ]; then
 		git clone --branch="$ONAP_VERSION" --recurse-submodules http://gerrit.onap.org/r/oom "\$ROOT/oom"
-	fi
-
-	m '[manager] Patching ONAP OOM to push to ChartMuseum'
-	PATTERN='s|helm package -d \$(PACKAGE_DIR) \$\*; fi|helm package -d \$(PACKAGE_DIR) \$*; helm push --force \$* http://127.0.0.1:$CHARTMUSEUM_PORT; fi|g'
-	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/Makefile"
-	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/common/Makefile"
-	sed --in-place "\$PATTERN" "\$ROOT/oom/kubernetes/sdnc/Makefile"
-
-	#m '[helm] Ensuring ONAP OOM plugins are installed'
-	#helm plugin install "\$ROOT/oom/kubernetes/helm/plugins/deploy/" || true
-	#helm plugin install "\$ROOT/oom/kubernetes/helm/plugins/undeploy/" || true
-
-	cd "\$ROOT/oom/kubernetes"
-
-	m '[helm] Patching etcd chart'
-	if ! grep --quiet --line-regexp '^apiVersion:.*' common/etcd/Chart.yaml; then
-		echo 'apiVersion: v1' >> common/etcd/Chart.yaml
+		echo $(c "$PATCH") > "\$ROOT/patch"
+		chmod +x "\$ROOT/patch"
+		"\$ROOT/patch" "$CHARTMUSEUM_PORT"
 	fi
 
 	m '[helm] Building ONAP charts'
+	cd "\$ROOT/oom/kubernetes"
 	make
 
 EOT

@@ -11,9 +11,9 @@ if [ "$1" == -c ]; then
 	"$HERE/clean"
 fi
 
-. "$ROOT/configuration/helm3/hello-world/environment"
+. "$ROOT/configuration/helm/hello-world/environment"
 
-"$ROOT/workloads/okd3/create-tenant" "$OKD_USER" "$OKD_PROJECT" scc:anyuid
+"$ROOT/workloads/okd/create-tenant" "$OKD_USER" "$OKD_PROJECT" scc:anyuid
 
 m "[helm] Deploying chart \"$HELM_CHART\""
 
@@ -22,7 +22,7 @@ install "$HELM_CHART_URL" \
 	--name-template="$HELM_TEMPLATE" \
 	--namespace="$OKD_PROJECT"
 
-"$ROOT/workloads/okd3/oc" \
+"$ROOT/workloads/okd/oc" \
 expose service "$HELM_TEMPLATE-$HELM_CHART"
 
-"$ROOT/workloads/okd3/update-router-host" "$HELM_TEMPLATE-$HELM_CHART-$OKD_PROJECT.apps.okd.lab"
+"$ROOT/workloads/okd/update-router-host" "$HELM_TEMPLATE-$HELM_CHART-$OKD_PROJECT.apps.okd.lab"

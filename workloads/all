@@ -8,7 +8,7 @@ ROOT=$(readlink -f "$HERE/..")
 . "$ROOT/utils/trap"
 
 if [ "$1" == -c ]; then
-	"$HERE/okd3/clean"
+	"$HERE/okd/clean"
 	"$HERE/hello-world/clean"
 	"$HERE/common/clean"
 fi

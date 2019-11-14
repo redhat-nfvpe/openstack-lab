@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+CHARTMUSEUM_PORT=$1
+
+function privileged () {
+	local F=$1
+	local LINE=$2
+	local COLUMN=$3
+
+	local INDENT=$(printf "%${COLUMN}s")
+
+	local HEAD=$(cat "$F" | head --lines=$(expr "$LINE" - 1))
+	local TAIL=$(cat "$F" | tail --lines="+$LINE")
+
+	echo $"$HEAD" > "$F"
+	echo "${INDENT}securityContext:" >> "$F"
+	echo "${INDENT}  privileged: true" >> "$F"
+	echo $"$TAIL" >> "$F"
+}
+
+cd "$HOME/workloads/onap/oom/kubernetes"
+
+echo 'Patching to push to ChartMuseum'
+PATTERN="s|helm package -d \$(PACKAGE_DIR) \$\*; fi|helm package -d \$(PACKAGE_DIR) \$*; helm push --force \$* http://127.0.0.1:$CHARTMUSEUM_PORT; fi|g"
+sed --in-place "$PATTERN" Makefile
+sed --in-place "$PATTERN" common/Makefile
+sed --in-place "$PATTERN" sdnc/Makefile
+
+echo 'Patching etcd'
+echo 'apiVersion: v1' >> common/etcd/Chart.yaml
+
+echo 'Patching mariadb-galera'
+privileged common/mariadb-galera/templates/statefulset.yaml 114 10
+privileged common/mariadb-galera/templates/statefulset.yaml 124 10
+
+echo 'Patching so'
+privileged so/templates/deployment.yaml 52 8
+privileged so/templates/deployment.yaml 114 8
