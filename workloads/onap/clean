@@ -16,8 +16,10 @@ m '[okd] Deleting persistent volumes'
 function persistentvolume () {
 	#"$ROOT/workloads/okd/oc" \
 	#patch persistentvolume "$1" \
-	#--patch='{"spec":{"persistentVolumeReclaimPolicy":"Recycle"}}' || true
+	#	--patch='{"spec":{"persistentVolumeReclaimPolicy":"Recycle"}}' || true
 
+	# Note: If the persistentvolume uses hostPath, then that directory will not be deleted,
+	# no matter what the reclaimPolicy is!
 	"$ROOT/workloads/okd/oc" \
 	delete persistentvolume "$1" --wait || true
 }
@@ -27,4 +29,5 @@ persistentvolume mariadb-galera-mariadb-galera-data1
 persistentvolume mariadb-galera-mariadb-galera-data2
 
 "$ROOT/workloads/okd/oc" \
-adm policy reconcile-sccs --additive-only=false --confirm
+adm policy reconcile-sccs \
+	--additive-only=false --confirm

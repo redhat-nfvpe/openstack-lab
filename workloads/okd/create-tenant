@@ -50,21 +50,11 @@ if [ $# -gt 2 ]; then
 			adm policy add-role-to-user "${P:5}" \
 				--namespace="$OKD_PROJECT" \
 				--serviceaccount=default
-
-# 			"$HERE/oc" \
-# 			adm policy add-role-to-user "${P:5}" \
-# 				--namespace="$OKD_PROJECT" \
-# 				"$OKD_USER"
 		elif [ "${P:0:13}" == cluster-role: ]; then
 			"$HERE/oc" \
 			adm policy add-cluster-role-to-user "${P:13}" \
 				--namespace="$OKD_PROJECT" \
 				--serviceaccount=default
-
-# 			"$HERE/oc" \
-# 			adm policy add-cluster-role-to-user "${P:13}" \
-# 				--namespace="$OKD_PROJECT" \
-# 				"$OKD_USER"
 		else
 			m "Unsupported permission prefix: \"$P\"" "$RED"
 			exit 1

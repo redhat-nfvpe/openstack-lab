@@ -24,9 +24,17 @@ function deploy () {
 	"$ROOT/workloads/helm/helm" install "local/$COMPONENT" \
 		--name-template="$COMPONENT" \
 		--namespace="$OKD_PROJECT" \
+		--timeout=15m \
 		--debug \
 		"${@:2}"
 }
 
-deploy mariadb-galera --set persistence.enabled=false
+deploy mariadb-galera \
+	--set persistence.enabled=false
+
 deploy so
+
+"$ROOT/workloads/okd/oc" \
+expose service so
+
+"$ROOT/workloads/okd/update-router-host" so-onap.apps.okd.lab
