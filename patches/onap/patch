@@ -8,32 +8,39 @@ function privileged () {
 	local LINE=$2
 	local COLUMN=$3
 
-	local INDENT=$(printf "%${COLUMN}s")
+	local INDENT=$(printf "%$(expr "$COLUMN" - 1)s")
 
-	local HEAD=$(cat "$F" | head --lines=$(expr "$LINE" - 1))
-	local TAIL=$(cat "$F" | tail --lines="+$LINE")
-
-	echo $"$HEAD" > "$F"
-	echo "${INDENT}securityContext:" >> "$F"
-	echo "${INDENT}  privileged: true" >> "$F"
-	echo $"$TAIL" >> "$F"
+	sed --in-place "${LINE}i\ ${INDENT}  privileged: true" "$F"
+	sed --in-place "${LINE}i\ ${INDENT}securityContext:" "$F"
 }
 
 cd "$HOME/workloads/onap/oom/kubernetes"
 
-echo 'Patching to push to ChartMuseum'
+echo 'Patching Makefiles (to push to ChartMuseum)'
 PATTERN="s|helm package -d \$(PACKAGE_DIR) \$\*; fi|helm package -d \$(PACKAGE_DIR) \$*; helm push --force \$* http://127.0.0.1:$CHARTMUSEUM_PORT; fi|g"
 sed --in-place "$PATTERN" Makefile
 sed --in-place "$PATTERN" common/Makefile
 sed --in-place "$PATTERN" sdnc/Makefile
 
-echo 'Patching etcd'
+echo 'Patching etcd (for missing apiVersion)'
 echo 'apiVersion: v1' >> common/etcd/Chart.yaml
 
-echo 'Patching mariadb-galera'
+echo 'Patching mariadb-galera (for persistence.enabled=true on hostPath)'
 privileged common/mariadb-galera/templates/statefulset.yaml 114 10
 privileged common/mariadb-galera/templates/statefulset.yaml 124 10
 
+echo "Patching portal (for *.persistence.enabled=false)"
+sed --in-place '87i\        - name: mariadb-data' portal/charts/portal-mariadb/templates/deployment.yaml
+sed --in-place '104i\        - name: {{ include "common.fullname" . }}-data' portal/charts/portal-cassandra/templates/deployment.yaml
+
+echo "Patching sdc (for *.persistence.enabled=false)"
+sed --in-place '85i\        - name: {{ include "common.fullname" . }}-data' sdc/charts/sdc-es/templates/deployment.yaml
+
+echo 'Patching aai (for java.nio.file.AccessDeniedException)'
+privileged aai/components/aai-elasticsearch/templates/deployment.yaml 98 8
+#privileged aai/components/aai-elasticsearch/templates/deployment.yaml 62 8
+#privileged aai/templates/deployment.yaml 56 8
+
 echo 'Patching so'
-privileged so/templates/deployment.yaml 52 8
-privileged so/templates/deployment.yaml 114 8
+#privileged so/templates/deployment.yaml 52 8
+#privileged so/templates/deployment.yaml 114 8

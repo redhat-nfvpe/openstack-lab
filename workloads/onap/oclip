@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+ROOT=$(readlink -f "$HERE/../..")
+. "$ROOT/configuration/environment"
+. "$ROOT/utils/functions"
+
+ARGS=
+if [ $# -gt 0 ]; then
+	ARGS=" $(c "$@")"
+fi
+
+"$ROOT/ssh" -t manager \
+"POD=\$(\"\$HOME/workloads/okd/oc\" get pod --selector=app=cli --output=jsonpath='{.items[0].metadata.name}')
+\"\$HOME/workloads/okd/oc\" \\
+exec -it \"\$POD\" -- bash -c \"OPEN_CLI_PRODUCT_IN_USE=open-cli oclip$ARGS\""

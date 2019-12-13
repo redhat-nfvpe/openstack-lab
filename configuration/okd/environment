@@ -2,7 +2,7 @@ OKD_VERSION=3.11
 
 # See: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 #      curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt
-KUBECTL_VERSION=1.16.2
+KUBECTL_VERSION=1.16.3
 
 # See: https://pypi.org/project/ansible/
 # BUG: Playbooks do *not* work on Ansible 2.6+

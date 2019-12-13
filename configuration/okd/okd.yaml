@@ -31,7 +31,7 @@ resources:
     properties:
       name: okd.node
       is_public: false
-      vcpus: 4
+      vcpus: 16
       ram: 65536 # MB
       disk: 20 # GB
 

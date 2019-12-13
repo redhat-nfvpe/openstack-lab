@@ -27,6 +27,7 @@ resources:
     properties:
       project: { get_resource: project }
       ram: -1
+      cores: -1
 
   admin-user:
     type: OS::Keystone::User

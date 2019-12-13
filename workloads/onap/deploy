@@ -13,28 +13,88 @@ fi
 
 . "$ROOT/configuration/onap/environment"
 
-"$ROOT/workloads/okd/create-tenant" "$OKD_USER" "$OKD_PROJECT" scc:privileged cluster-role:cluster-admin
+"$ROOT/workloads/okd/create-tenant" "$OKD_USER" "$OKD_PROJECT" \
+	scc:privileged cluster-role:cluster-admin
 
 #	scc:anyuid scc:hostaccess scc:hostmount-anyuid scc:hostnetwork scc:nonroot scc:privileged \
 #	cluster-role:cluster-admin
 
-function deploy () {
+function install () {
 	local COMPONENT=$1
-	m "[helm] Deploying component \"$COMPONENT\""
+	m "[helm] Installing component \"$COMPONENT\""
 	"$ROOT/workloads/helm/helm" install "local/$COMPONENT" \
 		--name-template="$COMPONENT" \
 		--namespace="$OKD_PROJECT" \
-		--timeout=15m \
 		--debug \
 		"${@:2}"
 }
 
-deploy mariadb-galera \
-	--set persistence.enabled=false
+function expose () {
+	local SERVICE=$1
+	local HOST=$SERVICE-$OKD_PROJECT.apps.okd.lab
+	"$ROOT/workloads/okd/oc" expose service "$SERVICE"
+	"$ROOT/workloads/okd/update-router-host" "$HOST"
+}
 
-deploy so
+#
+# Common
+#
 
-"$ROOT/workloads/okd/oc" \
-expose service so
+install cli
 
-"$ROOT/workloads/okd/update-router-host" so-onap.apps.okd.lab
+# Used by A&AI
+install cassandra \
+	--set=persistence.enabled=false \
+	--set=replicaCount=2
+
+# Used by SO
+# Minimum replicaCount=3 (the default)
+install mariadb-galera \
+	--set=persistence.enabled=false
+
+#
+# Portal
+#
+
+# Has its own MariaDB and Cassandra clusters
+install portal \
+	--set=portal-mariadb.persistence.enabled=false \
+	--set=portal-cassandra.persistence.enabled=false
+
+expose portal-app
+# curl portal-app-onap.apps.okd.lab
+
+#
+# A&AI
+#
+
+# See: https://jira.onap.org/browse/OOM-2161
+install aai \
+	--set=aai-graphgraph.image=zhabba/aai-graphgraph:1.5
+
+#
+# SDC
+#
+
+install sdc \
+	--set=sdc-es.persistence.enabled=false \
+	--set=sdc-onboarding-be.persistence.enabled=false
+
+#
+# SO
+#
+
+# Waits for jobs to complete
+install so \
+	--timeout=30m
+
+expose so
+# curl so-onap.apps.okd.lab/manage/info
+
+# helm install local/cassandra --name-template=cassandra --namespace=onap --set=persistence.enabled=false --set=replicaCount=2
+# helm install local/mariadb-galera --name-template=mariadb-galera --namespace=onap --set=persistence.enabled=false
+# helm install local/portal --name-template=portal --namespace=onap --set=persistence.enabled=false
+# helm install local/aai --name-template=aai --namespace=onap --set=aai-graphgraph.image=zhabba/aai-graphgraph:1.5
+# helm install local/sdc --name-template=sdc --namespace=onap --set=sdc-es.persistence.enabled=false --set=sdc-onboarding-be.persistence.enabled=false
+# helm install local/so --name-template=so --namespace=onap
+# helm install local/multicloud --name-template=multicloud --namespace=onap
